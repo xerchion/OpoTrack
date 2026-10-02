@@ -1,0 +1,6 @@
+# Finales de línea coherentes entre Windows y Linux
+* text=auto
+*.bat text eol=crlf
+
+# La tarea programada va en UTF-16 (lo exige el Programador de tareas)
+OpoTrack-Notificar.xml binary

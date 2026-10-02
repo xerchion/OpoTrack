@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Asociar a una convocatoria existente</h1>
+<div class="box">
+  <div class="puesto">{{ candidato.puesto or '—' }} · {{ candidato.localidad or '—' }} · {{ candidato.categoria or '—' }}</div>
+  <div class="muted small">{{ candidato.titulo }}</div>
+</div>
+{% if convocatorias %}
+<form method="post" class="stack">
+  <label>Convocatoria
+    <select name="convocatoria_id" required>
+      <option value="">— elige una —</option>
+      {% for cv in convocatorias %}<option value="{{ cv.id }}">{{ cv.nombre }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Tipo de publicación
+    <select name="tipo_publicacion">
+      {% for t in tipos %}<option value="{{ t.codigo }}">{{ t.nombre }}</option>{% endfor %}
+    </select>
+  </label>
+  <div>
+    <button class="btn btn-primary">Asociar</button>
+    <a class="btn btn-ghost" href="{{ url_for('bandeja') }}">Cancelar</a>
+  </div>
+</form>
+{% else %}
+<p class="muted">Aún no hay convocatorias en seguimiento. Usa «Aceptar» en la bandeja para crear la primera.</p>
+<a class="btn" href="{{ url_for('bandeja') }}">Volver a la bandeja</a>
+{% endif %}
+{% endblock %}

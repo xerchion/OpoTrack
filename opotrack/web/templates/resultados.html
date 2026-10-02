@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+{% block content %}
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="ic-star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
+  <symbol id="ic-eye" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="ic-edit" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></symbol>
+  <symbol id="ic-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+  <symbol id="ic-x" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+  <symbol id="ic-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+</svg>
+
+<div class="head-row">
+  <h1>{{ titulo }}</h1>
+  <button type="button" id="btn-leyenda" class="icon-btn" title="Ayuda: qué hace cada icono" aria-label="Ayuda"><svg class="ic"><use href="#ic-help"/></svg></button>
+</div>
+<p class="muted">{{ descripcion }}</p>
+
+<div id="leyenda" class="leyenda" hidden>
+  <div class="leyenda-tit">¿Qué hace cada icono?</div>
+  <ul>
+    <li><svg class="ic"><use href="#ic-star"/></svg> <span><strong>Seguir</strong> — crea la convocatoria en Seguimiento.</span></li>
+    <li><svg class="ic"><use href="#ic-eye"/></svg> <span><strong>Review</strong> — envía el anuncio a la bandeja para revisarlo.</span></li>
+    <li><svg class="ic"><use href="#ic-edit"/></svg> <span><strong>Añadir info</strong> — editar o completar los datos del anuncio.</span></li>
+    <li><svg class="ic"><use href="#ic-search"/></svg> <span><strong>Detectar puesto</strong> — descarga el cuerpo del anuncio y busca el puesto.</span></li>
+    <li><svg class="ic ic-danger"><use href="#ic-x"/></svg> <span><strong>Descartar</strong> — lo oculta; no volverá a aparecer en las búsquedas.</span></li>
+  </ul>
+</div>
+
+{% if filas %}
+<div class="filtros">
+  <input id="f-texto" type="text" placeholder="Filtrar por texto (puesto, organismo, título)…">
+  <select id="f-ambito">
+    <option value="">Todos los ámbitos</option>
+    {% for a in ambitos %}<option>{{ a }}</option>{% endfor %}
+  </select>
+  <select id="f-fuente">
+    <option value="">Todos los boletines</option>
+    {% for f in fuentes %}<option>{{ f }}</option>{% endfor %}
+  </select>
+  <select id="f-tipo">
+    <option value="">Cualquier tipo</option>
+    {% for t in tipos %}<option>{{ t }}</option>{% endfor %}
+  </select>
+  <select id="f-sistema">
+    <option value="">Cualquier sistema</option>
+    {% for s in sistemas %}<option>{{ s }}</option>{% endfor %}
+  </select>
+  <select id="f-plazas">
+    <option value="0">Plazas: cualquiera</option>
+    <option value="1">1 o más</option>
+    <option value="2">2 o más</option>
+    <option value="5">5 o más</option>
+    <option value="10">10 o más</option>
+  </select>
+  <label class="chk"><input id="f-puesto" type="checkbox"> solo con puesto</label>
+  <span id="f-contador"></span>
+</div>
+
+<div class="acciones-masivas">
+  <label class="chk"><input id="sel-todo" type="checkbox"> Seleccionar todo</label>
+  <button type="button" id="del-todo" class="btn btn-small" disabled title="Descarta todos los anuncios filtrados">Eliminar todo</button>
+  <button type="button" id="btn-actualizar" class="btn btn-small btn-ghost" title="Recargar la página para actualizar los filtros (p. ej. quitar localidades cuyos anuncios ya has borrado)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> Actualizar</button>
+</div>
+
+<table class="listado">
+<thead><tr><th>Anuncio</th><th>Ámbito</th><th>Fecha</th></tr></thead>
+<tbody>
+{% for f in filas %}
+<tr data-buscar="{{ (f.titulo ~ ' ' ~ (f.organismo or '') ~ ' ' ~ (f.puesto or '') ~ ' ' ~ f.referencia) | lower }}"
+    data-ambito="{{ f.ambito }}" data-fuente="{{ f.fuente }}"
+    data-tipo="{{ f.tipo_personal or '' }}" data-sistema="{{ f.sistema_acceso or '' }}"
+    data-plazas="{{ f.num_plazas or 0 }}" data-puesto="{{ '1' if f.puesto else '0' }}">
+  <td>
+    <div class="acciones-iconos">
+      <form method="post" action="{{ url_for('resultado_a_seguimiento', rid=f.id) }}"><button class="icon-act" title="Seguir (a seguimiento)"><svg class="ic"><use href="#ic-star"/></svg></button></form>
+      <form method="post" action="{{ url_for('resultado_a_bandeja', rid=f.id) }}"><button class="icon-act" title="Review (a la bandeja)"><svg class="ic"><use href="#ic-eye"/></svg></button></form>
+      <a class="icon-act" href="{{ url_for('resultado_info', rid=f.id) }}" title="Añadir info"><svg class="ic"><use href="#ic-edit"/></svg></a>
+      <form method="post" data-ajax="detectar" action="{{ url_for('resultado_detectar_puesto', rid=f.id) }}"><button class="icon-act" title="Detectar puesto"><svg class="ic"><use href="#ic-search"/></svg></button></form>
+      <form method="post" data-ajax="descartar" action="{{ url_for('resultado_descartar', rid=f.id) }}"><button class="icon-act danger" title="Descartar"><svg class="ic"><use href="#ic-x"/></svg></button></form>
+    </div>
+    <div>{{ f.titulo }}</div>
+    <div class="puesto-linea small">{% if f.puesto %}Puesto detectado: <strong>{{ f.puesto }}</strong>{% endif %}</div>
+    {% if f.num_plazas or f.tipo_personal or f.sistema_acceso or f.turno %}
+    <div class="muted small">
+      {%- set partes = [] -%}
+      {%- if f.num_plazas %}{% set _ = partes.append(f.num_plazas ~ (' plazas' if f.num_plazas != 1 else ' plaza')) %}{% endif -%}
+      {%- if f.tipo_personal %}{% set _ = partes.append(f.tipo_personal) %}{% endif -%}
+      {%- if f.sistema_acceso %}{% set _ = partes.append(f.sistema_acceso) %}{% endif -%}
+      {%- if f.turno %}{% set _ = partes.append('turno ' ~ f.turno) %}{% endif -%}
+      {{ partes | join(' · ') }}
+    </div>
+    {% endif %}
+    <div class="muted small"><strong style="font-size:15px;color:var(--ink)">{{ f.fuente }}</strong>{% if f.url %} · <a href="{{ f.url }}" target="_blank" rel="noopener">{{ f.referencia }}</a>{% else %} · {{ f.referencia }}{% endif %}</div>
+  </td>
+  <td><strong>{{ f.ambito or '—' }}</strong></td>
+  <td class="nowrap">{{ f.fecha.strftime('%d-%m-%Y') if f.fecha else '—' }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+{% else %}
+<p class="muted">No hay anuncios en esta categoría de la última búsqueda.</p>
+{% endif %}
+
+<div class="acciones-pie" style="margin-top:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+  <a class="btn btn-ghost" href="{{ url_for('bandeja') }}">← Volver a la bandeja</a>
+  {% if filas %}
+  <button type="button" id="del-todo-pie" class="btn btn-small" title="Descarta todos los anuncios filtrados">Eliminar todo</button>
+  {% endif %}
+</div>
+
+<script>
+(function () {
+  var b = document.getElementById('btn-leyenda'), l = document.getElementById('leyenda');
+  if (b && l) b.addEventListener('click', function () { l.hidden = !l.hidden; });
+})();
+(function () {
+  // Actualizar: recarga la página para reconstruir los filtros desde el servidor
+  // (p. ej. quitar del desplegable localidades cuyos anuncios ya se han borrado).
+  var btn = document.getElementById('btn-actualizar');
+  if (btn) btn.addEventListener('click', function () { location.reload(); });
+})();
+(function () {
+  // Descartar y Detectar puesto sin recargar la página (no se pierde el scroll).
+  document.querySelectorAll('form[data-ajax]').forEach(function (form) {
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var tipo = form.getAttribute('data-ajax'),
+          tr = form.closest('tr'),
+          btn = form.querySelector('button');
+      if (btn) btn.disabled = true;
+      fetch(form.action, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (tipo === 'descartar') {
+            if (tr && tr.parentNode) tr.parentNode.removeChild(tr);
+            if (window.opoDecBadge) window.opoDecBadge('badge-nocoincidentes', 1);
+            if (window.__aplicaResultados) window.__aplicaResultados();
+            return;
+          }
+          if (btn) btn.disabled = false;
+          var linea = tr ? tr.querySelector('.puesto-linea') : null;
+          if (!linea) return;
+          if (data && data.puesto) {
+            linea.innerHTML = 'Puesto detectado: <strong></strong>';
+            linea.querySelector('strong').textContent = data.puesto;
+          } else {
+            linea.textContent = '(sin puesto detectado)';
+            linea.classList.add('muted');
+          }
+        })
+        .catch(function () { if (btn) btn.disabled = false; });
+    });
+  });
+})();
+(function () {
+  var t = document.getElementById('f-texto'),
+      a = document.getElementById('f-ambito'),
+      fu = document.getElementById('f-fuente'),
+      tp = document.getElementById('f-tipo'),
+      si = document.getElementById('f-sistema'),
+      pl = document.getElementById('f-plazas'),
+      pu = document.getElementById('f-puesto'),
+      cont = document.getElementById('f-contador');
+  if (!t) return;
+  window.__aplicaResultados = aplica;
+
+  // Restaura el filtro desde la URL (para conservarlo al descartar y recargar).
+  var params = new URLSearchParams(location.search);
+  if (params.has('texto')) t.value = params.get('texto');
+  if (params.has('ambito')) a.value = params.get('ambito');
+  if (params.has('fuente')) fu.value = params.get('fuente');
+  if (params.has('tipo')) tp.value = params.get('tipo');
+  if (params.has('sistema')) si.value = params.get('sistema');
+  if (params.has('plazas')) pl.value = params.get('plazas');
+  if (params.get('puesto') === '1') pu.checked = true;
+
+  // Refleja el filtro activo en la URL (sin recargar), para que el redirect
+  // del botón «Descartar» (request.referrer) vuelva a la misma vista filtrada.
+  function sincronizaUrl() {
+    var p = new URLSearchParams();
+    if (t.value.trim()) p.set('texto', t.value.trim());
+    if (a.value) p.set('ambito', a.value);
+    if (fu.value) p.set('fuente', fu.value);
+    if (tp.value) p.set('tipo', tp.value);
+    if (si.value) p.set('sistema', si.value);
+    if (pl.value && pl.value !== '0') p.set('plazas', pl.value);
+    if (pu.checked) p.set('puesto', '1');
+    var qs = p.toString();
+    history.replaceState(null, '', qs ? location.pathname + '?' + qs : location.pathname);
+  }
+
+  function aplica() {
+    var filas = document.querySelectorAll('tr[data-buscar]'),
+        q = (t.value || '').toLowerCase().trim(),
+        av = a.value, fv = fu.value, tv = tp.value, sv = si.value,
+        pv = parseInt(pl.value || '0', 10), puc = pu.checked, vis = 0;
+    filas.forEach(function (tr) {
+      var d = tr.dataset;
+      var ok = (!q || d.buscar.indexOf(q) >= 0)
+            && (!av || d.ambito === av)
+            && (!fv || d.fuente === fv)
+            && (!tv || d.tipo === tv)
+            && (!sv || d.sistema === sv)
+            && (pv === 0 || parseInt(d.plazas || '0', 10) >= pv)
+            && (!puc || d.puesto === '1');
+      tr.style.display = ok ? '' : 'none';
+      if (ok) vis++;
+    });
+    cont.textContent = vis + ' de ' + filas.length + ' anuncios';
+    sincronizaUrl();
+  }
+  [t, a, fu, tp, si, pl, pu].forEach(function (el) {
+    el.addEventListener('input', aplica);
+    el.addEventListener('change', aplica);
+  });
+  aplica();
+})();
+(function () {
+  // Eliminar todo (barra superior y pie): descarta de golpe los anuncios filtrados.
+  var selTodo = document.getElementById('sel-todo'),
+      delTodo = document.getElementById('del-todo'),
+      delTodoPie = document.getElementById('del-todo-pie');
+
+  function descartaVisibles() {
+    var visibles = [].slice.call(document.querySelectorAll('tr[data-buscar]')).filter(function (tr) {
+      return tr.style.display !== 'none';
+    });
+    if (!visibles.length) return;
+    if (!confirm('¿Descartar los ' + visibles.length + ' anuncios filtrados? No volverán a aparecer.')) return;
+    if (delTodo) delTodo.disabled = true;
+    if (delTodoPie) delTodoPie.disabled = true;
+    Promise.all(visibles.map(function (tr) {
+      var form = tr.querySelector('form[data-ajax="descartar"]');
+      if (!form) return Promise.resolve();
+      return fetch(form.action, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function () { tr.remove(); }).catch(function () {});
+    })).then(function () {
+      if (selTodo) selTodo.checked = false;
+      // Recarga limpia (sin filtros) para que los desplegables se reconstruyan
+      // desde el servidor y desaparezcan las localidades/boletines ya vaciados.
+      location.replace(location.pathname);
+    });
+  }
+
+  if (selTodo && delTodo) {
+    selTodo.addEventListener('change', function () { delTodo.disabled = !selTodo.checked; });
+    delTodo.addEventListener('click', descartaVisibles);
+  }
+  if (delTodoPie) delTodoPie.addEventListener('click', descartaVisibles);
+})();
+</script>
+{% endblock %}

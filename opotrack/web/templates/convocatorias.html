@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="head-row">
+  <h1>Seguimiento</h1>
+  <a class="btn btn-primary" href="{{ url_for('convocatoria_nueva') }}">Añadir Convocatoria</a>
+</div>
+{% if not filas %}
+<p class="muted">No hay convocatorias en seguimiento. Acepta novedades desde la <a href="{{ url_for('bandeja') }}">bandeja</a>, o pulsa «Añadir Convocatoria» para darla de alta manualmente.</p>{% endif %}
+{% if filas %}
+<div class="filtros">
+  <input id="f-texto" type="text" placeholder="Filtrar por texto (nombre, localidad)…">
+  <select id="f-boletin">
+    <option value="">Todos los boletines</option>
+    {% for b in boletines %}<option>{{ b }}</option>{% endfor %}
+  </select>
+  <select id="f-grupo">
+    <option value="">Cualquier grupo</option>
+    {% for g in grupos %}<option>{{ g }}</option>{% endfor %}
+  </select>
+  <select id="f-fase">
+    <option value="">Cualquier fase</option>
+    {% for fa in fases %}<option>{{ fa }}</option>{% endfor %}
+  </select>
+  <select id="f-estado">
+    <option value="">Cualquier estado</option>
+    {% for e in estados %}<option>{{ e }}</option>{% endfor %}
+  </select>
+  <span id="f-contador"></span>
+</div>
+
+<table>
+<thead><tr><th class="fav-cell" title="Favorito">★</th><th>Convocatoria</th><th>Localidad</th><th>Grupo</th><th>Fase</th><th>Pub.</th></tr></thead>
+<tbody>
+{% for f in filas %}
+<tr data-buscar="{{ ((f.nombre or '') ~ ' ' ~ (f.localidad or '')) | lower }}"
+    data-boletin="{{ f.boletines | join(' ') }}" data-grupo="{{ f.grupo or '' }}"
+    data-fase="{{ f.fase or '' }}" data-estado="{{ f.estado_personal or '' }}"
+    data-favorito="{{ '1' if f.favorito else '' }}" class="{{ 'fav' if f.favorito else '' }}">
+  <td class="fav-cell"><button type="button" class="fav-btn" data-cid="{{ f.id }}"
+      aria-pressed="{{ 'true' if f.favorito else 'false' }}" title="Marcar como favorito">{{ '★' if f.favorito else '☆' }}</button></td>
+  <td><a href="{{ url_for('ficha', cid=f.id) }}">{{ f.nombre }}</a>
+    {% if f.en_plazo %}<div><span class="badge badge-alta">quedan {{ f.dias_rest }} días</span></div>{% endif %}</td>
+  <td>{{ f.localidad or '—' }}</td>
+  <td>{{ f.grupo or '—' }}</td>
+  <td>{{ f.fase or '—' }}</td>
+  <td>{% if f.boletines %}{% for b in f.boletines %}<span class="pill">{{ b }}</span> {% endfor %}{% else %}{{ f.n_pub }}{% endif %}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+{% endif %}
+
+<script>
+(function () {
+  var t = document.getElementById('f-texto'),
+      bo = document.getElementById('f-boletin'),
+      gr = document.getElementById('f-grupo'),
+      fa = document.getElementById('f-fase'),
+      es = document.getElementById('f-estado'),
+      cont = document.getElementById('f-contador');
+  if (!t) return;
+  var filas = [].slice.call(document.querySelectorAll('tr[data-buscar]'));
+  function aplica() {
+    var q = (t.value || '').toLowerCase().trim(),
+        bv = bo.value, gv = gr.value, fv = fa.value, ev = es.value, vis = 0;
+    filas.forEach(function (tr) {
+      var d = tr.dataset;
+      var ok = (!q || d.buscar.indexOf(q) >= 0)
+            && (!bv || (' ' + d.boletin + ' ').indexOf(' ' + bv + ' ') >= 0)
+            && (!gv || d.grupo === gv)
+            && (!fv || d.fase === fv)
+            && (!ev || d.estado === ev);
+      tr.style.display = ok ? '' : 'none';
+      if (ok) vis++;
+    });
+    cont.textContent = vis + ' de ' + filas.length + ' convocatorias';
+  }
+  [t, bo, gr, fa, es].forEach(function (el) {
+    el.addEventListener('input', aplica);
+    el.addEventListener('change', aplica);
+  });
+  aplica();
+})();
+</script>
+<script>
+(function () {
+  document.querySelectorAll('.fav-btn').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var cid = b.dataset.cid, tr = b.closest('tr');
+      fetch('/convocatoria/' + cid + '/favorito', {
+        method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      }).then(function (r) { return r.json(); }).then(function (d) {
+        var fav = !!d.favorito;
+        b.textContent = fav ? '★' : '☆';
+        b.setAttribute('aria-pressed', fav ? 'true' : 'false');
+        tr.classList.toggle('fav', fav);
+        tr.dataset.favorito = fav ? '1' : '';
+        var tbody = tr.parentNode;
+        if (fav) {
+          tbody.insertBefore(tr, tbody.firstChild);
+        } else {
+          var favs = tbody.querySelectorAll('tr.fav');
+          var last = favs.length ? favs[favs.length - 1] : null;
+          if (last) { if (last.nextSibling) tbody.insertBefore(tr, last.nextSibling); else tbody.appendChild(tr); }
+          else { tbody.insertBefore(tr, tbody.firstChild); }
+        }
+      }).catch(function () {});
+    });
+  });
+})();
+</script>
+{% endblock %}

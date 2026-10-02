@@ -1,0 +1,393 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="head-row">
+  <h1>Bandeja de novedades</h1>
+</div>
+
+<form method="post" action="{{ url_for('buscar') }}" class="buscador">
+  <div class="buscador-cab">
+    <div class="buscador-botones">
+      <button id="btn-buscar" type="submit" name="modo" value="real" class="lupa-btn" aria-label="Buscar" data-bloqueada="{{ '1' if busqueda_bloqueada else '' }}"{% if busqueda_bloqueada %} disabled{% endif %} title="Buscar (con una fecha anterior a hoy puedes buscar aunque hayas llegado al límite de hoy)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+      </button>
+      {% if resumen_modal %}<button type="button" id="btn-resumen" class="icono-btn" title="Resumen de la búsqueda" aria-label="Resumen de la búsqueda">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="9" y1="6" x2="19" y2="6"/><line x1="9" y1="12" x2="19" y2="12"/><line x1="9" y1="18" x2="19" y2="18"/><circle cx="4.8" cy="6" r="1.4" fill="currentColor" stroke="none"/><circle cx="4.8" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="4.8" cy="18" r="1.4" fill="currentColor" stroke="none"/></svg>
+      </button>{% endif %}
+      <button type="button" id="btn-filtros" class="icono-btn" title="Filtros de búsqueda (boletines y ayuntamientos)" aria-label="Filtros de búsqueda">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+      </button>
+    </div>
+    <input type="date" name="fecha" value="{{ hoy_iso }}" max="{{ hoy_iso }}" aria-label="Fecha de búsqueda" title="Fecha de búsqueda">
+  </div>
+  <!-- Los selectores viven en un modal (dentro del form para que se envíen al buscar). -->
+  <div id="modal-filtros" class="modal-overlay" hidden>
+    <div class="modal-box modal-filtros-box" role="dialog" aria-modal="true">
+      <div class="modal-cab">
+        <h2>Filtros de búsqueda</h2>
+        <button type="button" id="btn-cerrar-filtros" class="modal-x" title="Cerrar" aria-label="Cerrar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+        </button>
+      </div>
+      <p class="muted small" style="margin:0 0 12px">Elige qué boletines y ayuntamientos entran en la búsqueda. Al cerrar, pulsa la lupa para buscar.</p>
+      <div style="margin-bottom:12px"><button type="button" id="chk-toggle" class="btn" title="Marcar o desmarcar todos los boletines y ayuntamientos">Desmarcar</button></div>
+      <div class="campo buscador-fila"><label class="chk-seccion-lbl"><input type="checkbox" class="chk-seccion" checked> Boletines</label>
+        <div class="buscador-chks">
+          {% for fu in fuentes_busqueda if fu.codigo in ['BOE', 'BOJA'] %}
+          <label class="chk" title="{{ fu.nombre }}"><input type="checkbox" name="fuentes" value="{{ fu.codigo }}" checked> {{ fu.codigo }}</label>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="campo buscador-fila"><label class="chk-seccion-lbl"><input type="checkbox" class="chk-seccion" checked> Provincias</label>
+        <div class="buscador-chks">
+          {% for fu in fuentes_busqueda if fu.codigo not in ['BOE', 'BOJA'] %}
+          <label class="chk" title="{{ fu.nombre }}"><input type="checkbox" name="fuentes" value="{{ fu.codigo }}" checked> <span class="chk-prov">{{ fu.provincia or fu.codigo }}</span></label>
+          {% endfor %}
+        </div>
+      </div>
+      {% if ayuntamientos_busqueda %}
+      <div class="campo buscador-fila"><label class="chk-seccion-lbl"><input type="checkbox" class="chk-seccion" checked> Ayuntamientos</label>
+        <div class="buscador-chks">
+          {% for fu in ayuntamientos_busqueda %}
+          <label class="chk" title="{{ fu.nombre }}"><input type="checkbox" name="fuentes" value="{{ fu.codigo }}" checked> <span class="chk-prov">{{ fu.nombre.replace('Ayuntamiento de ', '') }}</span></label>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</form>
+{% if busqueda_bloqueada %}<p class="muted small" style="margin-top:-8px">Has alcanzado el límite de búsquedas de hoy. Para buscar boletines antiguos elige una fecha anterior; para hoy, vuelve mañana.</p>{% endif %}
+
+
+{% if not filas %}
+  <p class="muted">La bandeja está vacía. Pulsa «Buscar» para traer novedades.</p>
+{% else %}
+<div class="filtros">
+  <input id="f-texto" type="text" placeholder="Filtrar por texto (puesto, organismo, título)…">
+  <select id="f-boletin">
+    <option value="">Todos los boletines</option>
+    {% for b in boletines %}<option>{{ b }}</option>{% endfor %}
+  </select>
+  <select id="f-nivel">
+    <option value="">Cualquier confianza</option>
+    {% for n in niveles %}<option value="{{ n }}">{{ n | capitalize }}</option>{% endfor %}
+  </select>
+  <span id="f-contador"></span>
+</div>
+
+<table class="bandeja">
+  <thead>
+    <tr>
+      <th>Conf.</th><th>Puesto / organismo</th><th>Localidad</th>
+      <th>Categoría</th><th>Perfil</th><th>Entró</th><th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for f in filas %}
+    <tr class="fila-main"
+        data-buscar="{{ ((f.puesto or '') ~ ' ' ~ (f.organismo or '') ~ ' ' ~ (f.titulo or '') ~ ' ' ~ (f.localidad or '') ~ ' ' ~ f.referencia) | lower }}"
+        data-boletin="{{ f.fuente }}" data-nivel="{{ f.nivel }}">
+      <td><span class="badge badge-{{ f.nivel }}">{{ f.nivel }}</span></td>
+      <td>
+        <div class="puesto">{{ f.puesto or '—' }}</div>
+        {% if not f.puesto %}<form method="post" data-ajax="detectar-bandeja" action="{{ url_for('detectar_puesto', cid=f.id) }}" style="display:inline"><button class="btn btn-small btn-ghost" title="Descarga el cuerpo del anuncio del BOE e intenta detectar el puesto">Detectar puesto</button></form>{% endif %}
+        <div class="muted small">{{ f.organismo or '' }}</div>
+        <div class="muted small">{% if f.fuente %}<span class="pill">{{ f.fuente }}</span> {% endif %}<a href="{{ f.url }}" target="_blank" rel="noopener">{{ f.referencia }}</a></div>
+      </td>
+      <td><strong>{{ f.localidad or '—' }}</strong></td>
+      <td>{{ f.categoria or '—' }}</td>
+      <td class="small">{{ f.perfil }}</td>
+      <td class="nowrap">{{ f.entrada.strftime('%d-%m-%Y') if f.entrada else '—' }}{% if f.atrasada %}<br><span class="pill pill-red">atrasada</span>{% endif %}</td>
+      <td class="acciones">
+        <form method="post" action="{{ url_for('aceptar', cid=f.id) }}"><button class="btn btn-small btn-primary">Seguir</button></form>
+        <a class="btn btn-small" href="{{ url_for('asociar', cid=f.id) }}">Asociar</a>
+        <form method="post" data-ajax="descartar-bandeja" action="{{ url_for('descartar', cid=f.id) }}"><button class="btn btn-small btn-ghost">Descartar</button></form>
+      </td>
+    </tr>
+    <tr class="fila-titulo"><td></td><td colspan="6" class="muted small">{{ f.titulo }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+{% if resumen_modal %}
+<div id="modal-resumen" class="modal-overlay" hidden>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
+    <div class="modal-cab">
+      <h2 id="modal-titulo">Resumen de la búsqueda</h2>
+      <button type="button" id="btn-aceptar-resumen" class="modal-x" title="Cerrar" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+      </button>
+    </div>
+    <p class="muted small">Consultado el {{ resumen_modal.fecha }}</p>
+    {% macro fila_resumen(d) %}
+      <li>
+        <span class="resumen-cod">{{ d.codigo }}</span>
+        {% if d.ambito %}<span class="resumen-amb">{{ d.ambito }}</span>{% endif %}
+        {% if d.estado == 'ok' %}
+          <span class="resumen-dato" title="nuevas / total de anuncios"><strong>{{ d.nuevos }}</strong>/{{ d.anuncios }}</span>
+        {% elif d.estado == 'sin_publicacion' %}
+          <span class="resumen-dato" style="color:var(--amber);font-weight:700">no hay publicación este día</span>
+        {% elif d.estado == 'error' %}
+          <span class="resumen-dato" style="color:var(--red)">no se pudo consultar</span>
+        {% else %}
+          <span class="resumen-dato muted">sin conector disponible</span>
+        {% endif %}
+      </li>
+    {% endmacro %}
+    {% set aytos = resumen_modal.detalle | selectattr('es_ayto') | list %}
+    <div class="resumen-cols">
+      <div class="resumen-col">
+        <div class="resumen-subtit">Boletines</div>
+        <ul class="resumen-lista">
+          {% for d in resumen_modal.detalle if not d.es_ayto %}{{ fila_resumen(d) }}{% endfor %}
+        </ul>
+      </div>
+      <div class="resumen-col">
+        <div class="resumen-subtit">Ayuntamientos</div>
+        <ul class="resumen-lista">
+          {% for d in aytos %}{{ fila_resumen(d) }}{% else %}<li class="muted small">Sin ayuntamientos.</li>{% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div id="overlay-busqueda" class="overlay-busqueda" hidden aria-live="polite">
+  <div class="ob-inner">
+    <svg class="ob-ring" viewBox="0 0 120 120" aria-hidden="true">
+      <circle class="ob-track" cx="60" cy="60" r="52"></circle>
+      <circle class="ob-prog" id="ob-prog" cx="60" cy="60" r="52"></circle>
+    </svg>
+    <div class="ob-actual" id="ob-actual">Preparando búsqueda…</div>
+    <div class="ob-pct" id="ob-pct">0%</div>
+    <div class="ob-acciones" id="ob-acciones" hidden>
+      <button type="button" id="ob-aceptar" class="btn btn-primary">Aceptar</button>
+      <button type="button" id="ob-stats" class="btn" hidden>Estadísticas</button>
+    </div>
+    <div class="ob-stats-panel" id="ob-estadisticas" hidden></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  // --- Filtros de la bandeja (oculta el par fila-main + fila-titulo) ---
+  var t = document.getElementById('f-texto'),
+      bo = document.getElementById('f-boletin'),
+      ni = document.getElementById('f-nivel'),
+      cont = document.getElementById('f-contador');
+  if (t) {
+    function aplica() {
+      var mains = document.querySelectorAll('tr.fila-main'),
+          q = (t.value || '').toLowerCase().trim(),
+          bv = bo.value, nv = ni.value, vis = 0;
+      mains.forEach(function (tr) {
+        var d = tr.dataset;
+        var ok = (!q || d.buscar.indexOf(q) >= 0)
+              && (!bv || d.boletin === bv)
+              && (!nv || d.nivel === nv);
+        tr.style.display = ok ? '' : 'none';
+        var tit = tr.nextElementSibling;
+        if (tit && tit.classList.contains('fila-titulo')) tit.style.display = ok ? '' : 'none';
+        if (ok) vis++;
+      });
+      cont.textContent = vis + ' de ' + mains.length + ' anuncios';
+    }
+    [t, bo, ni].forEach(function (el) {
+      el.addEventListener('input', aplica);
+      el.addEventListener('change', aplica);
+    });
+    window.__aplicaBandeja = aplica;
+    aplica();
+  }
+  // --- Modal "Resumen de la búsqueda" ---
+  var modal = document.getElementById('modal-resumen'),
+      abrir = document.getElementById('btn-resumen'),
+      cerrar = document.getElementById('btn-aceptar-resumen');
+  if (modal && abrir) {
+    var open = function () { modal.hidden = false; };
+    var close = function () { modal.hidden = true; };
+    abrir.addEventListener('click', open);
+    cerrar.addEventListener('click', close);
+    modal.addEventListener('click', function (e) { if (e.target === modal) close(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+  }
+  // --- Modal "Filtros de búsqueda" (lápiz) ---
+  var mFil = document.getElementById('modal-filtros'),
+      abFil = document.getElementById('btn-filtros'),
+      cxFil = document.getElementById('btn-cerrar-filtros');
+  if (mFil && abFil) {
+    abFil.addEventListener('click', function () { mFil.hidden = false; });
+    if (cxFil) cxFil.addEventListener('click', function () { mFil.hidden = true; });
+    mFil.addEventListener('click', function (e) { if (e.target === mFil) mFil.hidden = true; });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') mFil.hidden = true; });
+  }
+  // --- Buscador: aviso al elegir fecha pasada o domingo (aceptar/cancelar) ---
+  var formBuscar = document.querySelector('form.buscador');
+  if (formBuscar) {
+    var inFecha = formBuscar.querySelector('input[name="fecha"]'),
+        hoyStr = inFecha ? inFecha.getAttribute('max') : null;
+    var btnBuscar = document.getElementById('btn-buscar');
+    function ajustaBtnBuscar() {
+      if (!btnBuscar) return;
+      var esPasada = inFecha && inFecha.value && hoyStr && inFecha.value < hoyStr;
+      btnBuscar.disabled = btnBuscar.dataset.bloqueada === '1' && !esPasada;
+    }
+    if (inFecha) inFecha.addEventListener('change', ajustaBtnBuscar);
+    ajustaBtnBuscar();
+    var chkToggle = document.getElementById('chk-toggle');
+    if (chkToggle) {
+      chkToggle.addEventListener('click', function () {
+        var chks = formBuscar.querySelectorAll('input[name="fuentes"]');
+        var todos = [].every.call(chks, function (c) { return c.checked; });
+        [].forEach.call(chks, function (c) { c.checked = !todos; });
+        chkToggle.textContent = todos ? 'Marcar' : 'Desmarcar';
+        syncTodasSecciones();
+      });
+    }
+    // --- Casilla por sección (Boletines / Provincias / Ayuntamientos) ---
+    function fuentesDe(fila) { return fila.querySelectorAll('input[name="fuentes"]'); }
+    function syncSeccion(cab) {
+      var fila = cab.closest('.buscador-fila'); if (!fila) return;
+      var chks = fuentesDe(fila), n = chks.length,
+          marc = [].filter.call(chks, function (c) { return c.checked; }).length;
+      cab.checked = marc > 0 && marc === n;
+      cab.indeterminate = marc > 0 && marc < n;
+    }
+    var cabsSeccion = formBuscar.querySelectorAll('.chk-seccion');
+    function syncTodasSecciones() { [].forEach.call(cabsSeccion, syncSeccion); }
+    [].forEach.call(cabsSeccion, function (cab) {
+      cab.addEventListener('change', function () {
+        var fila = cab.closest('.buscador-fila');
+        [].forEach.call(fuentesDe(fila), function (c) { c.checked = cab.checked; });
+        cab.indeterminate = false;
+        ajustaBtnBuscar();
+      });
+    });
+    [].forEach.call(formBuscar.querySelectorAll('input[name="fuentes"]'), function (c) {
+      c.addEventListener('change', function () {
+        var fila = c.closest('.buscador-fila'),
+            cab = fila && fila.querySelector('.chk-seccion');
+        if (cab) syncSeccion(cab);
+      });
+    });
+    syncTodasSecciones();
+    formBuscar.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (inFecha && inFecha.value && hoyStr) {
+        var v = inFecha.value, p = v.split('-'),
+            dObj = new Date(+p[0], +p[1] - 1, +p[2]),
+            legible = dObj.toLocaleDateString('es-ES'), msg = null;
+        if (v < hoyStr) {
+          msg = 'Vas a buscar en una fecha pasada (' + legible + '). '
+              + 'El BOJA se omitirá porque solo permite el último boletín. ¿Continuar?';
+        } else if (dObj.getDay() === 0) {
+          msg = 'El ' + legible + ' es domingo y no se suele publicar boletín. ¿Buscar de todos modos?';
+        }
+        if (msg && !confirm(msg)) return;
+      }
+      iniciarBusquedaConProgreso();
+    });
+    // Búsqueda con overlay de progreso (SSE): difumina la web, muestra el sitio
+    // en proceso y un % (cada sitio = 100/total), y al terminar un botón Aceptar.
+    function iniciarBusquedaConProgreso() {
+      var ov = document.getElementById('overlay-busqueda');
+      if (!ov) { formBuscar.submit(); return; }
+      var prog = document.getElementById('ob-prog'),
+          actual = document.getElementById('ob-actual'),
+          pctEl = document.getElementById('ob-pct'),
+          acciones = document.getElementById('ob-acciones'),
+          aceptar = document.getElementById('ob-aceptar'),
+          btnStats = document.getElementById('ob-stats'),
+          panel = document.getElementById('ob-estadisticas'),
+          C = 2 * Math.PI * 52, stats = null;
+      prog.style.strokeDasharray = C.toFixed(1);
+      function setPct(p) {
+        p = Math.max(0, Math.min(100, Math.round(p)));
+        prog.style.strokeDashoffset = (C * (1 - p / 100)).toFixed(1);
+        pctEl.textContent = p + '%';
+      }
+      function esc(s) { return String(s == null ? '' : s).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
+      function construirStats(st) {
+        if (!st || !st.detalle) return '<p class="muted small">Sin datos.</p>';
+        var total = 0, rows = '';
+        // Orden por tiempo descendente para ver de un vistazo los más lentos.
+        var items = st.detalle.slice().sort(function (a, b) { return (b.segundos || 0) - (a.segundos || 0); });
+        items.forEach(function (d) {
+          var seg = (d.segundos != null) ? d.segundos.toFixed(2) + ' s' : '—';
+          if (d.segundos != null) total += d.segundos;
+          rows += '<div class="ob-stat-row"><span class="ob-stat-name">' + esc(d.codigo) + ' ' + esc(d.ambito || '') +
+                  '</span><span class="ob-stat-time">' + seg + '</span></div>';
+        });
+        var totalWall = (st.segundos_total != null) ? st.segundos_total : total;
+        return '<div class="ob-stat-cab"><span>Sitio</span><span>tiempo</span></div>' + rows +
+               '<div class="ob-stat-total-tiempo">Tiempo total de la búsqueda: <strong>' + totalWall.toFixed(2) + ' s</strong></div>';
+      }
+      setPct(0);
+      actual.textContent = 'Preparando búsqueda…';
+      acciones.hidden = true; panel.hidden = true; panel.innerHTML = '';
+      ov.hidden = false;
+      var fd = new FormData(formBuscar);
+      fd.append('modo', 'real');
+      var es = new EventSource('{{ url_for("buscar_stream") }}?' + new URLSearchParams(fd).toString());
+      es.onmessage = function (ev) {
+        var d; try { d = JSON.parse(ev.data); } catch (_) { return; }
+        if (d.tipo === 'prog') { actual.textContent = d.actual || '…'; setPct(d.pct || 0); }
+        else if (d.tipo === 'fin') {
+          es.close();
+          if (d.error) { actual.textContent = d.error; }
+          else { setPct(100); actual.textContent = 'Búsqueda completada'; }
+          stats = d.stats || null;
+          if (btnStats) btnStats.hidden = !stats;
+          acciones.hidden = false;
+        }
+      };
+      es.onerror = function () {
+        es.close();
+        actual.textContent = 'Se interrumpió la conexión con la búsqueda.';
+        if (btnStats) btnStats.hidden = true;
+        acciones.hidden = false;
+      };
+      aceptar.onclick = function () { window.location = '{{ url_for("bandeja") }}'; };
+      if (btnStats) btnStats.onclick = function () {
+        if (!panel.hidden) { panel.hidden = true; btnStats.textContent = 'Estadísticas'; return; }
+        panel.innerHTML = construirStats(stats);
+        panel.hidden = false; btnStats.textContent = 'Ocultar estadísticas';
+      };
+    }
+  }
+  // --- Descartar / Detectar puesto en la bandeja sin recargar (AJAX) ---
+  document.querySelectorAll('form[data-ajax]').forEach(function (form) {
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var tipo = form.getAttribute('data-ajax'),
+          fila = form.closest('tr.fila-main'),
+          btn = form.querySelector('button');
+      if (btn) btn.disabled = true;
+      fetch(form.action, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (tipo === 'descartar-bandeja') {
+            if (fila) {
+              var tit = fila.nextElementSibling;
+              if (tit && tit.classList.contains('fila-titulo')) tit.remove();
+              fila.remove();
+            }
+            if (window.opoDecBadge) window.opoDecBadge('badge-bandeja', 1);
+            if (window.__aplicaBandeja) window.__aplicaBandeja();
+          } else {
+            if (btn) btn.disabled = false;
+            var cell = fila ? fila.querySelector('.puesto') : null;
+            if (data && data.puesto) {
+              if (cell) cell.textContent = data.puesto;
+              form.remove();
+            }
+          }
+        })
+        .catch(function () { if (btn) btn.disabled = false; });
+    });
+  });
+})();
+</script>
+{% endblock %}

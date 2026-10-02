@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="head-row">
+  <h1>Añadir convocatoria</h1>
+  <a class="btn btn-ghost" href="{{ url_for('convocatorias') }}">← Volver a seguimiento</a>
+</div>
+<p class="muted">Alta manual en el seguimiento. Rellena los datos que conozcas; podrás editarlos o completarlos luego en la ficha.</p>
+
+<div class="box">
+<form method="post" action="{{ url_for('convocatoria_nueva') }}" class="grid2">
+  <label>Organismo<input name="organismo"></label>
+  <label>Provincia<input name="provincia"></label>
+  <label>Localidad<input name="localidad"></label>
+  <label>Cuerpo / Escala<input name="cuerpo_escala"></label>
+  <label>Puesto<input name="puesto"></label>
+  <label>Grupo / categoría<input name="grupo"></label>
+  <label>Rama<input name="rama"></label>
+  <label>Tipo de personal<input name="tipo_personal"></label>
+  <label>Sistema de acceso<input name="sistema_acceso"></label>
+  <label>Nº de plazas<input name="num_plazas" type="number" min="0"></label>
+  <label>Fecha base BOE<input name="fecha_base_boe" type="date"></label>
+  <label>Fase
+    <select name="fase_id"><option value="">—</option>
+      {% for fa in fases %}<option value="{{ fa.id }}">{{ fa.nombre }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Estado personal
+    <select name="estado_personal_id"><option value="">—</option>
+      {% for e in estados %}<option value="{{ e.id }}">{{ e.nombre }}</option>{% endfor %}
+    </select>
+  </label>
+  <label class="col2">Notas<textarea name="notas" rows="2"></textarea></label>
+  <div class="col2"><button class="btn btn-primary">Crear convocatoria</button></div>
+</form>
+</div>
+{% endblock %}

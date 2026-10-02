@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Configuración</h1>
+<div class="subtabs">
+  <button type="button" class="subtab activo" data-tab="perfiles">Perfiles</button>
+  <button type="button" class="subtab" data-tab="boletines">Boletines</button>
+  <button type="button" class="subtab" data-tab="mantenimiento">Mantenimiento</button>
+</div>
+
+<div class="tabpanel" id="tab-perfiles">
+<p class="muted">Los perfiles definen qué te interesa. Pincha en un perfil para editar sus <strong>temáticas</strong>, su <strong>ámbito geográfico</strong> y sus <strong>exclusiones</strong>. Los cambios se aplican en la próxima búsqueda.</p>
+
+<table>
+<thead><tr><th>Perfil</th><th>Rama</th><th>Ámbito</th><th>Estado</th></tr></thead>
+<tbody>
+{% for p in perfiles %}
+<tr class="fila-click" onclick="location.href='{{ url_for('perfil_editar', pid=p.id) }}'">
+  <td><a href="{{ url_for('perfil_editar', pid=p.id) }}">{{ p.nombre }}</a></td>
+  <td>{{ p.rama or '—' }}</td>
+  <td>{{ p.ambito or '—' }}</td>
+  <td>{% if p.activo %}<span class="badge badge-alta">activo</span>{% else %}<span class="pill">inactivo</span>{% endif %}</td>
+</tr>
+{% else %}
+<tr><td colspan="4" class="muted small">No hay perfiles todavía.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+
+<div class="box" style="margin-top:16px">
+  <h2>Nuevo perfil</h2>
+  <form method="post" action="{{ url_for('perfil_nuevo') }}" class="row">
+    <input name="nombre" placeholder="Nombre del perfil" required>
+    <input name="rama" placeholder="Rama (administrativa / informatica)">
+    <input name="ambito" placeholder="Ámbito (descriptivo)">
+    <button class="btn btn-primary">Crear</button>
+  </form>
+</div>
+</div>
+
+<div class="tabpanel" id="tab-boletines" hidden>
+<div class="box">
+  <h2>Boletines oficiales</h2>
+  <table>
+    <thead><tr><th>Código</th><th>Nombre</th><th>Estado</th><th></th></tr></thead>
+    <tbody>
+    {% for f in fuentes %}
+    <tr>
+      <td>{{ f.codigo }}</td>
+      <td>{{ f.nombre }}</td>
+      <td>{% if f.activa %}<span class="badge badge-alta">activa</span>{% else %}<span class="pill">inactiva</span>{% endif %}</td>
+      <td><form method="post" action="{{ url_for('fuente_toggle', fid=f.id) }}"><button class="btn btn-small">{{ 'Desactivar' if f.activa else 'Activar' }}</button></form></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+</div>
+
+<div class="tabpanel" id="tab-mantenimiento" hidden>
+<div class="box">
+  <h2>Opciones de la aplicación</h2>
+  <p class="muted small">Ajustes generales de la app. Se guardan en tu equipo y se aplican al momento.</p>
+  <form method="post" action="{{ url_for('config_ajustes') }}" class="stack">
+    <label>Máximo de búsquedas de boletines al día <span class="muted small">(0 = sin límite)</span>
+      <input name="max_busquedas_dia" type="number" min="0" value="{{ ajustes_app.max_busquedas_dia }}">
+    </label>
+    <div><button class="btn btn-primary">Guardar opciones</button></div>
+  </form>
+</div>
+<div class="box">
+  <h2>Modo Pánico</h2>
+  <p class="muted small">Elimina <strong>todos los descartes</strong> y las novedades descartadas guardadas. Úsalo cuando cambien tus intereses o tus búsquedas y quieras que vuelvan a estar disponibles anuncios que descartaste en el pasado; así nada queda descartado de forma permanente. No afecta a las convocatorias que tengas en seguimiento.</p>
+  <form method="post" action="{{ url_for('modo_panico') }}" onsubmit="return confirm('¿Activar Modo Pánico? Se borrarán todos los descartes para que nada quede descartado de forma permanente.');">
+    <button class="btn btn-ghost">Activar Modo Pánico</button>
+  </form>
+</div>
+</div>
+
+<script>
+(function () {
+  var tabs = document.querySelectorAll('.subtab'),
+      panels = document.querySelectorAll('.tabpanel');
+  tabs.forEach(function (t) {
+    t.addEventListener('click', function () {
+      tabs.forEach(function (x) { x.classList.remove('activo'); });
+      t.classList.add('activo');
+      panels.forEach(function (p) { p.hidden = (p.id !== 'tab-' + t.dataset.tab); });
+    });
+  });
+})();
+</script>
+{% endblock %}

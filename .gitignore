@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Credenciales (variables de entorno). Usa .env.example como plantilla.
+.env
+
+# Datos locales: base de datos, CSV descargados y archivos subidos
+data/
+
+# Logs y temporales
+logs/
+temp/
+*.log
+*.bak
+
+# Editor / sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

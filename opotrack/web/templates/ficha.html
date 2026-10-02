@@ -1,0 +1,461 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="head-row">
+  <h1>{{ c.puesto or c.organismo or 'Convocatoria' }}{% if c.localidad %} · {{ c.localidad }}{% endif %}</h1>
+  <button class="btn btn-primary" type="submit" form="ficha-edit">Guardar</button>
+</div>
+<p class="muted">
+  Fase: <strong>{{ c.fase.nombre if c.fase else '—' }}</strong> ·
+  Estado personal: <strong>{{ c.estado_personal.nombre if c.estado_personal else '—' }}</strong> ·
+  Fecha base BOE: <strong>{{ c.fecha_base_boe or '—' }}</strong>
+  {% if fecha_tope %}· Fecha tope: <strong>{{ fecha_tope.strftime('%d-%m-%Y') }}</strong>
+    ({% if tope_vencido %}plazo cerrado{% else %}quedan {{ dias_restantes }} días hábiles{% endif %}){% endif %}
+</p>
+
+<div class="subtabs">
+  <button type="button" class="subtab activo" data-tab="datos">Datos</button>
+  <button type="button" class="subtab" data-tab="publicaciones">Publicaciones ({{ publicaciones|length }})</button>
+  <button type="button" class="subtab" data-tab="temario">Temario ({{ documentos_temario|length }})</button>
+  <button type="button" class="subtab" data-tab="plazos">Plazos ({{ plazos|length }})</button>
+  <button type="button" class="subtab" data-tab="requisitos">Requisitos ({{ documentos_requisitos|length }})</button>
+  <button type="button" class="subtab" data-tab="leyes">Leyes ({{ leyes|length }})</button>
+  <button type="button" class="subtab subtab-opciones" data-tab="opciones" style="margin-left:auto">Opciones</button>
+</div>
+
+<div class="tabpanel" id="tab-datos">
+<form method="post" action="{{ url_for('editar', cid=c.id) }}" class="grid2" id="ficha-edit">
+  <label>Organismo<input name="organismo" value="{{ c.organismo or '' }}"></label>
+  <label>Provincia<input name="provincia" value="{{ c.provincia or '' }}"></label>
+  <label>Localidad<input name="localidad" value="{{ c.localidad or '' }}"></label>
+  <label>Cuerpo / Escala<input name="cuerpo_escala" value="{{ c.cuerpo_escala or '' }}"></label>
+  <label>Puesto<input name="puesto" value="{{ c.puesto or '' }}"></label>
+  <label>Grupo / categoría<input name="grupo" value="{{ c.grupo or '' }}"></label>
+  <label>Rama<input name="rama" value="{{ c.rama or '' }}"></label>
+  <label>Tipo de personal<input name="tipo_personal" value="{{ c.tipo_personal or '' }}"></label>
+  <label>Sistema de acceso<input name="sistema_acceso" value="{{ c.sistema_acceso or '' }}"></label>
+  <label>Nº de plazas<input name="num_plazas" value="{{ c.num_plazas or '' }}"></label>
+  <label>Fecha base BOE<input id="in-fecha-base" name="fecha_base_boe" type="date" value="{{ c.fecha_base_boe or '' }}"></label>
+  <label>Días hábiles del plazo<input id="in-dias-habiles" name="dias_habiles_plazo" type="number" min="1" value="{{ dias_plazo }}"></label>
+  <label>Fecha tope
+    <span style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <input id="fecha-tope-out" type="text" readonly value="{{ fecha_tope.strftime('%d-%m-%Y') if fecha_tope else '—' }}" style="max-width:140px">
+      <span id="fecha-tope-badge">{% if fecha_tope %}{% if tope_vencido %}<span class="pill pill-red">plazo cerrado</span>{% else %}<span class="badge badge-alta">quedan {{ dias_restantes }} días hábiles</span>{% endif %}{% else %}<span class="muted small">rellena la fecha base del BOE</span>{% endif %}</span>
+      <button id="btn-plazo-tope" type="submit" class="btn btn-small"
+              data-existentes="{{ plazos_abiertos|join(',') }}"
+              formaction="{{ url_for('plazo_desde_tope', cid=c.id) }}"
+              {% if plazo_tope_existe %}disabled title="Ya añadido a Plazos"{% elif not fecha_tope %}disabled{% endif %}>Añadir a Plazos</button>
+    </span>
+  </label>
+  <label>Fase
+    <select name="fase_id"><option value="">—</option>
+      {% for fa in fases %}<option value="{{ fa.id }}" {% if c.fase_id==fa.id %}selected{% endif %}>{{ fa.nombre }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Estado personal
+    <select name="estado_personal_id"><option value="">—</option>
+      {% for e in estados %}<option value="{{ e.id }}" {% if c.estado_personal_id==e.id %}selected{% endif %}>{{ e.nombre }}</option>{% endfor %}
+    </select>
+  </label>
+  <label class="col2">Notas<textarea name="notas" rows="7">{{ c.notas or '' }}</textarea></label>
+</form>
+<div class="box" style="margin-top:14px">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+    <h2 style="margin:0">URLs de info</h2>
+    <button type="button" class="add-icon-btn" id="enlace-add-toggle" title="Añadir URL" aria-label="Añadir URL">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+    </button>
+  </div>
+  <div class="row" id="enlace-add-form" hidden>
+    <input id="enlace-url" type="url" placeholder="https://…">
+    <input id="enlace-titulo" placeholder="Etiqueta (opcional)">
+    <button type="button" class="btn btn-small btn-primary" id="enlace-add-save" data-cid="{{ c.id }}">Guardar</button>
+    <button type="button" class="btn btn-small btn-ghost" id="enlace-add-cancel">Cancelar</button>
+  </div>
+  <ul class="lista" id="enlaces-info">
+    {% for e in enlaces %}
+    <li data-eid="{{ e.id }}">
+      <span class="enlace-vista">
+        <a href="{{ e.url }}" target="_blank" rel="noopener">{{ e.titulo or e.url }}</a>
+        <button type="button" class="plazo-accion enlace-editar-btn" title="Editar" aria-label="Editar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+        </button>
+        <button type="button" class="plazo-accion enlace-del" data-eid="{{ e.id }}" title="Quitar" aria-label="Quitar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+        </button>
+      </span>
+      <span class="enlace-editar-form" hidden>
+        <input class="enlace-e-url" type="url" value="{{ e.url }}">
+        <input class="enlace-e-tit" value="{{ e.titulo or '' }}" placeholder="Etiqueta">
+        <button type="button" class="btn btn-small btn-primary enlace-e-save" data-eid="{{ e.id }}">Guardar</button>
+        <button type="button" class="btn btn-small btn-ghost enlace-e-cancel">Cancelar</button>
+      </span>
+    </li>
+    {% else %}
+    <li class="muted small" id="enlaces-vacio">Sin enlaces todavía.</li>
+    {% endfor %}
+  </ul>
+</div>
+</div>
+
+<div class="tabpanel" id="tab-publicaciones" hidden>
+<div style="display:flex;justify-content:flex-end">
+  <button type="button" class="add-icon-btn" id="pub-add-toggle" title="Añadir publicación" aria-label="Añadir publicación">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+  </button>
+</div>
+<form method="post" action="{{ url_for('add_publicacion', cid=c.id) }}" class="row" id="pub-add-form" hidden>
+  <div class="form-titulo" style="flex:1 1 100%">Nueva publicación</div>
+  <label>Tipo<select name="tipo_publicacion">{% for t in tipos %}<option value="{{ t.codigo }}">{{ t.nombre }}</option>{% endfor %}</select></label>
+  <label>Referencia<input name="referencia_oficial" placeholder="BOE-A-..."></label>
+  <label>Fecha<input name="fecha_publicacion" type="date"></label>
+  <label>Título<input name="titulo" placeholder="Título"></label>
+  <label style="flex:1 1 100%">Notas<textarea name="notas" rows="7" placeholder="Notas"></textarea></label>
+  <button class="btn btn-small btn-primary">Añadir</button>
+  <button type="button" class="btn btn-small btn-ghost" id="pub-add-cancel">Cancelar</button>
+</form>
+<h2 style="text-align:center;margin:8px 0 16px">Listado de Publicaciones</h2>
+<ul class="timeline" style="margin-top:14px">
+{% for p in publicaciones %}
+  <li>
+    <div class="pub-vista">
+      <div class="pub-titulo">{{ p.titulo or '(sin título)' }}</div>
+      <div class="pub-cabecera">
+        <span class="tipo">{{ p.tipo_publicacion.nombre if p.tipo_publicacion else 'Publicación' }}</span>
+        <span class="muted small">· {{ p.fecha_publicacion.strftime('%d-%m-%Y') if p.fecha_publicacion else '—' }}</span>
+        <button type="button" class="plazo-accion pub-editar-btn" title="Editar" aria-label="Editar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+        </button>
+        <form method="post" action="{{ url_for('desasociar_publicacion', pid=p.id) }}" style="display:inline"
+              onsubmit="return confirm('¿Quitar esta publicación de la convocatoria?');">
+          <button class="plazo-accion" title="Quitar" aria-label="Quitar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+          </button>
+        </form>
+      </div>
+      <div class="small"><strong>Referencia:</strong> {% if p.url %}<a href="{{ p.url }}" target="_blank" rel="noopener">{{ p.referencia_oficial }}</a>{% else %}{{ p.referencia_oficial }}{% endif %}</div>
+      {% if p.notas %}<div class="small"><strong>Notas:</strong> {{ p.notas }}</div>{% endif %}
+    </div>
+    <form method="post" action="{{ url_for('editar_publicacion', pid=p.id) }}" class="row pub-editar-form" hidden>
+      <div class="form-titulo" style="flex:1 1 100%">Editar publicación</div>
+      <label>Tipo<select name="tipo_publicacion">{% for t in tipos %}<option value="{{ t.codigo }}" {% if p.tipo_publicacion and p.tipo_publicacion.codigo == t.codigo %}selected{% endif %}>{{ t.nombre }}</option>{% endfor %}</select></label>
+      <label>Referencia<input name="referencia_oficial" value="{{ p.referencia_oficial or '' }}" placeholder="BOE-A-..."></label>
+      <label>Fecha<input name="fecha_publicacion" type="date" value="{{ p.fecha_publicacion.isoformat() if p.fecha_publicacion else '' }}"></label>
+      <label style="flex:1 1 100%">Título<input name="titulo" value="{{ p.titulo or '' }}" placeholder="Título"></label>
+      <label style="flex:1 1 100%">URL<input name="url" value="{{ p.url or '' }}" placeholder="URL"></label>
+      <label style="flex:1 1 100%">Notas<textarea name="notas" rows="2" placeholder="Info a mano">{{ p.notas or '' }}</textarea></label>
+      <button class="btn btn-small btn-primary">Guardar</button>
+      <button type="button" class="btn btn-small btn-ghost pub-cancelar-btn">Cancelar</button>
+    </form>
+  </li>
+{% else %}
+  <li class="muted">Sin publicaciones.</li>
+{% endfor %}
+</ul>
+</div>
+
+<div class="tabpanel" id="tab-temario" hidden>
+<button type="button" class="btn btn-small btn-primary" id="tem-add-toggle">Añadir archivo</button>
+<form method="post" action="{{ url_for('subir_documento', cid=c.id, categoria='temario') }}" class="row" id="tem-add-form" enctype="multipart/form-data" hidden>
+  <input type="file" name="archivo" accept=".pdf,.docx" required>
+  <button class="btn btn-small btn-primary">Subir</button>
+  <button type="button" class="btn btn-small btn-ghost" id="tem-add-cancel">Cancelar</button>
+</form>
+<p class="muted small">Sube el temario en PDF o DOCX.</p>
+<ul class="lista" style="margin-top:8px">
+{% for d in documentos_temario %}
+  <li>
+    <a href="{{ url_for('descargar_documento', did=d.id) }}">{{ d.nombre }}</a>
+    <span class="muted small">{{ d.fecha.strftime('%d-%m-%Y') if d.fecha else '' }}</span>
+    <form method="post" action="{{ url_for('eliminar_documento', did=d.id) }}" style="display:inline"
+          onsubmit="return confirm('¿Eliminar este archivo?');">
+      <button class="plazo-accion" title="Eliminar" aria-label="Eliminar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+      </button>
+    </form>
+  </li>
+{% else %}<li class="muted">Sin archivos.</li>{% endfor %}
+</ul>
+</div>
+
+<div class="tabpanel" id="tab-plazos" hidden>
+<button type="button" class="btn btn-small btn-primary" id="plazo-add-toggle">Añadir apunte</button>
+<form method="post" action="{{ url_for('add_plazo', cid=c.id) }}" class="row" id="plazo-add-form" hidden>
+  <input name="tipo_plazo" placeholder="Tipo (solicitud, alegaciones...)">
+  <input name="fecha_inicio" type="date">
+  <input name="fecha_fin" type="date">
+  <button class="btn btn-small btn-primary">Añadir</button>
+  <button type="button" class="btn btn-small btn-ghost" id="plazo-add-cancel">Cancelar</button>
+</form>
+<ul class="lista" style="margin-top:14px">
+{% for p in plazos %}
+  <li>
+    <span class="plazo-vista">{{ p.tipo_plazo or 'Plazo' }}: {{ p.fecha_inicio.strftime('%d-%m-%Y') if p.fecha_inicio else '—' }} → <strong>{{ p.fecha_fin.strftime('%d-%m-%Y') if p.fecha_fin else '—' }}</strong>
+      {% if p.abierto %}<span class="badge badge-alta">quedan {{ p.dias_rest }} días hábiles</span>{% endif %}
+      <button type="button" class="plazo-accion plazo-editar-btn" title="Editar" aria-label="Editar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+      </button>
+      <form method="post" action="{{ url_for('eliminar_plazo', pid=p.id) }}" style="display:inline"
+            onsubmit="return confirm('¿Eliminar este apunte de plazo?');">
+        <button class="plazo-accion" title="Eliminar" aria-label="Eliminar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+        </button>
+      </form>
+    </span>
+    <form method="post" action="{{ url_for('editar_plazo', pid=p.id) }}" class="row plazo-editar-form" hidden>
+      <input name="tipo_plazo" value="{{ p.tipo_plazo or '' }}" placeholder="Concepto (p. ej. Plazo abierto)">
+      <input name="fecha_inicio" type="date" value="{{ p.fecha_inicio.isoformat() if p.fecha_inicio else '' }}">
+      <input name="fecha_fin" type="date" value="{{ p.fecha_fin.isoformat() if p.fecha_fin else '' }}">
+      <button class="btn btn-small btn-primary">Guardar</button>
+      <button type="button" class="btn btn-small btn-ghost plazo-cancelar-btn">Cancelar</button>
+    </form>
+  </li>
+{% else %}<li class="muted">Sin plazos.</li>{% endfor %}
+</ul>
+</div>
+
+<div class="tabpanel" id="tab-requisitos" hidden>
+<button type="button" class="btn btn-small btn-primary" id="req-add-toggle">Añadir archivo</button>
+<form method="post" action="{{ url_for('subir_documento', cid=c.id, categoria='requisitos') }}" class="row" id="req-add-form" enctype="multipart/form-data" hidden>
+  <input type="file" name="archivo" accept=".pdf,.docx" required>
+  <button class="btn btn-small btn-primary">Subir</button>
+  <button type="button" class="btn btn-small btn-ghost" id="req-add-cancel">Cancelar</button>
+</form>
+<p class="muted small">Sube los requisitos en PDF o DOCX.</p>
+<ul class="lista" style="margin-top:8px">
+{% for d in documentos_requisitos %}
+  <li>
+    <a href="{{ url_for('descargar_documento', did=d.id) }}">{{ d.nombre }}</a>
+    <span class="muted small">{{ d.fecha.strftime('%d-%m-%Y') if d.fecha else '' }}</span>
+    <form method="post" action="{{ url_for('eliminar_documento', did=d.id) }}" style="display:inline"
+          onsubmit="return confirm('¿Eliminar este archivo?');">
+      <button class="plazo-accion" title="Eliminar" aria-label="Eliminar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+      </button>
+    </form>
+  </li>
+{% else %}<li class="muted">Sin archivos.</li>{% endfor %}
+</ul>
+</div>
+
+<div class="tabpanel" id="tab-leyes" hidden>
+<button type="button" class="btn btn-small btn-primary" id="ley-add-toggle">Añadir ley</button>
+<form method="post" action="{{ url_for('add_ley', cid=c.id) }}" class="row" id="ley-add-form" hidden>
+  <input name="denominacion" placeholder="Ley 39/2015, de 1 de octubre..." required>
+  <input name="identificador_boe" placeholder="BOE-A-2015-10565">
+  <input name="url_consolidada" placeholder="https://www.boe.es/eli/...">
+  <select name="tema_id"><option value="">(sin tema)</option>{% for t in temas %}<option value="{{ t.id }}">{{ t.numero or '' }}. {{ (t.titulo or '')[:40] }}</option>{% endfor %}</select>
+  <button class="btn btn-small btn-primary">Añadir</button>
+  <button type="button" class="btn btn-small btn-ghost" id="ley-add-cancel">Cancelar</button>
+</form>
+<ul class="lista" style="margin-top:14px">
+{% for l in leyes %}
+  <li>{{ l.denominacion }} {% if l.url_consolidada %}· <a href="{{ l.url_consolidada }}" target="_blank" rel="noopener">consolidada</a>{% endif %}</li>
+{% else %}<li class="muted">Sin leyes enlazadas.</li>{% endfor %}
+</ul>
+</div>
+
+<div class="tabpanel" id="tab-opciones" hidden>
+  <div class="box">
+    <h2>Opciones de la convocatoria</h2>
+    <p class="muted small">«Borrar» mueve la convocatoria a la papelera; podrás restaurarla desde allí. No se elimina de forma permanente.</p>
+    <form method="post" action="{{ url_for('eliminar', cid=c.id) }}"
+          onsubmit="return confirm('¿Borrar esta convocatoria? Se moverá a la papelera y podrás restaurarla.');">
+      <button class="btn btn-ghost">Borrar</button>
+    </form>
+  </div>
+</div>
+
+<script>
+(function () {
+  var tabs = document.querySelectorAll('.subtab'),
+      panels = document.querySelectorAll('.tabpanel');
+  function activar(key) {
+    tabs.forEach(function (x) { x.classList.toggle('activo', x.dataset.tab === key); });
+    panels.forEach(function (p) { p.hidden = (p.id !== 'tab-' + key); });
+  }
+  tabs.forEach(function (t) {
+    t.addEventListener('click', function () {
+      activar(t.dataset.tab);
+      history.replaceState(null, '', '#' + t.dataset.tab);
+    });
+  });
+  var h = (location.hash || '').replace('#', '');
+  if (h && Array.prototype.some.call(tabs, function (x) { return x.dataset.tab === h; })) {
+    activar(h);
+  }
+})();
+</script>
+<script>
+(function () {
+  var fb = document.getElementById('in-fecha-base'),
+      di = document.getElementById('in-dias-habiles'),
+      out = document.getElementById('fecha-tope-out'),
+      badge = document.getElementById('fecha-tope-badge'),
+      btn = document.getElementById('btn-plazo-tope');
+  if (!fb || !di || !out || !badge) return;
+  function existe(key) {
+    return btn && (btn.dataset.existentes || '').split(',').indexOf(key) >= 0;
+  }
+  function dos(x) { return (x < 10 ? '0' : '') + x; }
+  function sumarHabiles(iso, n) {
+    var d = new Date(iso + 'T00:00:00');
+    if (isNaN(d.getTime()) || !n || n < 1) return null;
+    var c = 0;
+    while (c < n) { d.setDate(d.getDate() + 1); var w = d.getDay(); if (w !== 0 && w !== 6) c++; }
+    return d;
+  }
+  function habilesDesdeHoy(hasta) {
+    var d = new Date(); d.setHours(0, 0, 0, 0);
+    var h = new Date(hasta.getTime()); h.setHours(0, 0, 0, 0);
+    if (h < d) return -1;
+    var n = 0;
+    while (d < h) { d.setDate(d.getDate() + 1); var w = d.getDay(); if (w !== 0 && w !== 6) n++; }
+    return n;
+  }
+  function recalc() {
+    var iso = fb.value, n = parseInt(di.value, 10);
+    var tope = iso ? sumarHabiles(iso, n) : null;
+    if (!tope) {
+      out.value = '—';
+      badge.innerHTML = iso
+        ? '<span class="badge badge-alta">indica los días hábiles</span>'
+        : '<span class="muted small">rellena la fecha base del BOE</span>';
+      if (btn) { btn.disabled = true; btn.title = ''; }
+      return;
+    }
+    var topeIso = tope.getFullYear() + '-' + dos(tope.getMonth() + 1) + '-' + dos(tope.getDate());
+    out.value = dos(tope.getDate()) + '-' + dos(tope.getMonth() + 1) + '-' + tope.getFullYear();
+    var rest = habilesDesdeHoy(tope);
+    badge.innerHTML = (rest < 0)
+      ? '<span class="pill pill-red">plazo cerrado</span>'
+      : '<span class="badge badge-alta">quedan ' + rest + ' días hábiles</span>';
+    if (btn) {
+      var ya = existe(iso + '|' + topeIso);
+      btn.disabled = ya;
+      btn.title = ya ? 'Ya añadido a Plazos' : '';
+    }
+  }
+  fb.addEventListener('change', recalc);
+  di.addEventListener('input', recalc);
+  recalc();
+})();
+</script>
+<script>
+(function () {
+  function edicion(prefix) {
+    document.querySelectorAll('.' + prefix + '-editar-btn').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var li = b.closest('li');
+        li.querySelector('.' + prefix + '-vista').hidden = true;
+        li.querySelector('.' + prefix + '-editar-form').hidden = false;
+      });
+    });
+    document.querySelectorAll('.' + prefix + '-cancelar-btn').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var li = b.closest('li');
+        li.querySelector('.' + prefix + '-editar-form').hidden = true;
+        li.querySelector('.' + prefix + '-vista').hidden = false;
+      });
+    });
+  }
+  edicion('plazo');
+  edicion('pub');
+  function alta(toggleId, formId, cancelId) {
+    var b = document.getElementById(toggleId),
+        f = document.getElementById(formId),
+        c = document.getElementById(cancelId);
+    if (!b || !f) return;
+    b.addEventListener('click', function () { f.hidden = false; b.hidden = true; });
+    if (c) c.addEventListener('click', function () { f.hidden = true; b.hidden = false; });
+  }
+  alta('plazo-add-toggle', 'plazo-add-form', 'plazo-add-cancel');
+  alta('pub-add-toggle', 'pub-add-form', 'pub-add-cancel');
+  alta('tem-add-toggle', 'tem-add-form', 'tem-add-cancel');
+  alta('req-add-toggle', 'req-add-form', 'req-add-cancel');
+  alta('ley-add-toggle', 'ley-add-form', 'ley-add-cancel');
+})();
+</script>
+<script>
+(function () {
+  var XHR = { 'X-Requested-With': 'XMLHttpRequest' };
+  var lista = document.getElementById('enlaces-info');
+  if (!lista) return;
+  var toggle = document.getElementById('enlace-add-toggle'),
+      form = document.getElementById('enlace-add-form'),
+      inpUrl = document.getElementById('enlace-url'),
+      inpTit = document.getElementById('enlace-titulo'),
+      save = document.getElementById('enlace-add-save'),
+      cancel = document.getElementById('enlace-add-cancel');
+  var PENCIL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>';
+  var TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>';
+
+  function bindLi(li) {
+    var vista = li.querySelector('.enlace-vista'),
+        fedit = li.querySelector('.enlace-editar-form'),
+        eid = li.dataset.eid,
+        a = vista.querySelector('a');
+    vista.querySelector('.enlace-del').addEventListener('click', function () {
+      fetch('/enlace/' + eid + '/eliminar', { method: 'POST', headers: XHR })
+        .then(function (r) { return r.json(); })
+        .then(function (d) { if (d.ok) li.remove(); }).catch(function () {});
+    });
+    vista.querySelector('.enlace-editar-btn').addEventListener('click', function () {
+      vista.hidden = true; fedit.hidden = false;
+    });
+    fedit.querySelector('.enlace-e-cancel').addEventListener('click', function () {
+      fedit.hidden = true; vista.hidden = false;
+    });
+    fedit.querySelector('.enlace-e-save').addEventListener('click', function () {
+      var u = (fedit.querySelector('.enlace-e-url').value || '').trim();
+      var t = (fedit.querySelector('.enlace-e-tit').value || '').trim();
+      if (!u) return;
+      fetch('/enlace/' + eid + '/editar', { method: 'POST', headers: XHR, body: new URLSearchParams({ url: u, titulo: t }) })
+        .then(function (r) { return r.json(); }).then(function (d) {
+          if (!d.ok) return;
+          a.href = d.url; a.textContent = d.titulo || d.url;
+          fedit.hidden = true; vista.hidden = false;
+        }).catch(function () {});
+    });
+  }
+
+  function construirLi(d) {
+    var li = document.createElement('li');
+    li.dataset.eid = d.id;
+    li.innerHTML =
+      '<span class="enlace-vista"><a target="_blank" rel="noopener"></a>' +
+      '<button type="button" class="plazo-accion enlace-editar-btn" title="Editar">' + PENCIL + '</button>' +
+      '<button type="button" class="plazo-accion enlace-del" title="Quitar">' + TRASH + '</button></span>' +
+      '<span class="enlace-editar-form" hidden>' +
+      '<input class="enlace-e-url" type="url"><input class="enlace-e-tit" placeholder="Etiqueta">' +
+      '<button type="button" class="btn btn-small btn-primary enlace-e-save">Guardar</button>' +
+      '<button type="button" class="btn btn-small btn-ghost enlace-e-cancel">Cancelar</button></span>';
+    var a = li.querySelector('a'); a.href = d.url; a.textContent = d.titulo || d.url;
+    li.querySelector('.enlace-e-url').value = d.url;
+    li.querySelector('.enlace-e-tit').value = d.titulo || '';
+    bindLi(li);
+    return li;
+  }
+
+  lista.querySelectorAll('li[data-eid]').forEach(bindLi);
+
+  if (toggle && form) {
+    toggle.addEventListener('click', function () { form.hidden = false; toggle.hidden = true; inpUrl.focus(); });
+    if (cancel) cancel.addEventListener('click', function () { form.hidden = true; toggle.hidden = false; inpUrl.value = ''; inpTit.value = ''; });
+  }
+  if (save) {
+    save.addEventListener('click', function () {
+      var url = (inpUrl.value || '').trim();
+      if (!url) { inpUrl.focus(); return; }
+      fetch('/convocatoria/' + save.dataset.cid + '/enlace', { method: 'POST', headers: XHR, body: new URLSearchParams({ url: url, titulo: (inpTit.value || '').trim() }) })
+        .then(function (r) { return r.json(); }).then(function (d) {
+          if (!d.ok) return;
+          var vacio = document.getElementById('enlaces-vacio');
+          if (vacio) vacio.remove();
+          lista.appendChild(construirLi(d));
+          inpUrl.value = ''; inpTit.value = ''; form.hidden = true; toggle.hidden = false;
+        }).catch(function () {});
+    });
+  }
+})();
+</script>
+{% endblock %}

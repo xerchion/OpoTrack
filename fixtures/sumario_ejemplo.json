@@ -1,0 +1,121 @@
+{
+  "status": { "code": "200", "text": "ok" },
+  "data": {
+    "sumario": {
+      "metadatos": { "publicacion": "BOE", "fecha_publicacion": "20260804" },
+      "diario": [
+        {
+          "numero": "186",
+          "sumario_diario": {
+            "identificador": "BOE-S-2026-186",
+            "url_pdf": { "szBytes": "400000", "szKBytes": "391", "texto": "https://www.boe.es/boe/dias/2026/08/04/pdfs/BOE-S-2026-186.pdf" }
+          },
+          "seccion": [
+            {
+              "codigo": "1",
+              "nombre": "I. Disposiciones generales",
+              "departamento": [
+                {
+                  "codigo": "9999",
+                  "nombre": "MINISTERIO DE HACIENDA",
+                  "item": [
+                    {
+                      "identificador": "BOE-A-2026-19000",
+                      "titulo": "Orden por la que se aprueban modelos tributarios (esto NO es una oposición y debe ignorarse).",
+                      "url_pdf": { "texto": "https://www.boe.es/boe/dias/2026/08/04/pdfs/BOE-A-2026-19000.pdf" },
+                      "url_html": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-19000",
+                      "url_xml": "https://www.boe.es/diario_boe/xml.php?id=BOE-A-2026-19000"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "codigo": "2B",
+              "nombre": "II. Autoridades y personal - B. Oposiciones y concursos",
+              "departamento": [
+                {
+                  "codigo": "1101",
+                  "nombre": "MINISTERIO DE HACIENDA Y FUNCIÓN PÚBLICA",
+                  "epigrafe": [
+                    {
+                      "nombre": "Cuerpo General Administrativo de la Administración del Estado",
+                      "item": [
+                        {
+                          "identificador": "BOE-A-2026-20001",
+                          "titulo": "Resolución por la que se convoca proceso selectivo para ingreso en el Cuerpo General Administrativo de la Administración del Estado.",
+                          "url_pdf": { "texto": "https://www.boe.es/boe/dias/2026/08/04/pdfs/BOE-A-2026-20001.pdf" },
+                          "url_html": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-20001",
+                          "url_xml": "https://www.boe.es/diario_boe/xml.php?id=BOE-A-2026-20001"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "codigo": "2201",
+                  "nombre": "DIPUTACIÓN PROVINCIAL DE GRANADA",
+                  "item": [
+                    {
+                      "identificador": "BOE-A-2026-20002",
+                      "titulo": "Resolución por la que se convocan pruebas selectivas para cubrir plazas de Administrativo de la Diputación Provincial de Granada.",
+                      "url_pdf": { "texto": "https://www.boe.es/boe/dias/2026/08/04/pdfs/BOE-A-2026-20002.pdf" },
+                      "url_html": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-20002",
+                      "url_xml": "https://www.boe.es/diario_boe/xml.php?id=BOE-A-2026-20002"
+                    }
+                  ]
+                },
+                {
+                  "codigo": "2202",
+                  "nombre": "AYUNTAMIENTO DE SEVILLA",
+                  "item": [
+                    {
+                      "identificador": "BOE-A-2026-20003",
+                      "titulo": "Resolución por la que se convocan plazas de Administrativo del Ayuntamiento de Sevilla.",
+                      "url_pdf": { "texto": "https://www.boe.es/boe/dias/2026/08/04/pdfs/BOE-A-2026-20003.pdf" },
+                      "url_html": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-20003",
+                      "url_xml": "https://www.boe.es/diario_boe/xml.php?id=BOE-A-2026-20003"
+                    }
+                  ]
+                },
+                {
+                  "codigo": "2203",
+                  "nombre": "AYUNTAMIENTO DE VALENCIA",
+                  "item": [
+                    {
+                      "identificador": "BOE-A-2026-20004",
+                      "titulo": "Resolución por la que se convocan plazas de Técnico de Sistemas Informáticos del Ayuntamiento de Valencia.",
+                      "url_pdf": { "texto": "https://www.boe.es/boe/dias/2026/08/04/pdfs/BOE-A-2026-20004.pdf" },
+                      "url_html": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-20004",
+                      "url_xml": "https://www.boe.es/diario_boe/xml.php?id=BOE-A-2026-20004"
+                    }
+                  ]
+                },
+                {
+                  "codigo": "2204",
+                  "nombre": "AYUNTAMIENTO DE MÁLAGA",
+                  "item": [
+                    {
+                      "identificador": "BOE-A-2026-20005",
+                      "titulo": "Resolución por la que se convocan plazas de personal de limpieza del Ayuntamiento de Málaga.",
+                      "url_pdf": { "texto": "https://www.boe.es/boe/dias/2026/08/04/pdfs/BOE-A-2026-20005.pdf" },
+                      "url_html": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-20005",
+                      "url_xml": "https://www.boe.es/diario_boe/xml.php?id=BOE-A-2026-20005"
+                    },
+                    {
+                      "identificador": "BOE-A-2026-20006",
+                      "titulo": "Resolución por la que se convocan plazas de Técnico Auxiliar de Informática del Ayuntamiento de Málaga.",
+                      "url_pdf": { "texto": "https://www.boe.es/boe/dias/2026/08/04/pdfs/BOE-A-2026-20006.pdf" },
+                      "url_html": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-20006",
+                      "url_xml": "https://www.boe.es/diario_boe/xml.php?id=BOE-A-2026-20006"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

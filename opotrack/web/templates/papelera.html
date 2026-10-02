@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Papelera</h1>
+
+<h2>Convocatorias eliminadas</h2>
+{% if not filas %}
+<p class="muted">No hay convocatorias eliminadas.</p>
+{% else %}
+<table>
+<thead><tr><th>Convocatoria</th><th>Eliminada</th><th>Motivo</th><th></th></tr></thead>
+<tbody>
+{% for f in filas %}
+<tr>
+  <td>{{ f.nombre }}</td>
+  <td>{{ f.eliminada or '—' }}</td>
+  <td>{{ f.motivo or '—' }}</td>
+  <td class="acciones">
+    <form method="post" action="{{ url_for('restaurar', cid=f.id) }}"><button class="btn btn-small btn-primary">Restaurar</button></form>
+    <form method="post" action="{{ url_for('borrar', cid=f.id) }}" onsubmit="return confirm('¿Borrar definitivamente? No se puede deshacer.');"><button class="btn btn-small btn-ghost">Borrar definitivo</button></form>
+  </td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+{% endif %}
+
+<div class="head-row" style="margin-top:26px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+  <h2 style="margin:0">Novedades descartadas</h2>
+  {% if descartados %}
+  <form method="post" action="{{ url_for('vaciar_descartadas') }}" onsubmit="return confirm('¿Vaciar todas las novedades descartadas? La lista se vacía, pero seguirán sin reaparecer en las búsquedas.');">
+    <button class="btn btn-small btn-ghost" title="Vaciar la lista de novedades descartadas"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Vaciar descartadas</button>
+  </form>
+  {% endif %}
+</div>
+{% if not descartados %}
+<p class="muted">No hay novedades descartadas.</p>
+{% else %}
+<table>
+<thead><tr><th>Puesto / referencia</th><th>Localidad</th><th>Categoría</th><th>Descartada</th><th></th></tr></thead>
+<tbody>
+{% for d in descartados %}
+<tr>
+  <td><div class="puesto">{{ d.puesto or '—' }}</div><div class="muted small">{% if d.url %}<a href="{{ d.url }}" target="_blank" rel="noopener">{{ d.referencia }}</a>{% else %}{{ d.referencia }}{% endif %}</div></td>
+  <td>{{ d.localidad or '—' }}</td>
+  <td>{{ d.categoria or '—' }}</td>
+  <td>{{ d.fecha.date() if d.fecha else '—' }}</td>
+  <td class="acciones">
+    <form method="post" action="{{ url_for('recuperar_descarte', cid=d.id) }}"><button class="btn btn-small btn-primary">Review</button></form>
+    <form method="post" action="{{ url_for('borrar_descarte', cid=d.id) }}" onsubmit="return confirm('¿Eliminar definitivamente esta novedad de la papelera?');"><button class="btn btn-small btn-ghost">Eliminar</button></form>
+  </td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+{% endif %}
+{% endblock %}

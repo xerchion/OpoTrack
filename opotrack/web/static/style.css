@@ -1,0 +1,302 @@
+:root{
+  --bg:#eef0f4; --card:#ffffff; --card-2:#f4f6fa; --ink:#1b2029; --muted:#59616f;
+  --line:#c9cfda; --line-strong:#a9b2c3; --th-bg:#e9edf4;
+  --primary:#d32f2f; --primary-ink:#fff; --green:#137a3f; --green-bg:#d8efe1;
+  --amber:#7a4f00; --amber-bg:#fbe7c2; --red:#b42318; --red-bg:#fbdedb;
+  --shadow:0 1px 2px rgba(20,25,40,.06), 0 2px 6px rgba(20,25,40,.07);
+  --shadow-lg:0 4px 14px rgba(20,25,40,.14);
+}
+[data-theme="dark"]{
+  --bg:#0d111b; --card:#182031; --card-2:#1f293d; --ink:#e9ecf3; --muted:#a6b0c1;
+  --line:#38435c; --line-strong:#516188; --th-bg:#1f293c;
+  --primary:#ff6b6b; --primary-ink:#26090a; --green:#86e6ac; --green-bg:#123522;
+  --amber:#f2cd82; --amber-bg:#3a2f12; --red:#f6b8b4; --red-bg:#3c1d1b;
+  --shadow:0 1px 2px rgba(0,0,0,.45), 0 2px 8px rgba(0,0,0,.4);
+  --shadow-lg:0 6px 20px rgba(0,0,0,.55);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:14px/1.55 ui-monospace,"Cascadia Code","Cascadia Mono",Consolas,"Courier New",monospace;}
+a{color:var(--primary);text-decoration:none}
+a:hover{text-decoration:underline}
+
+.topbar{display:flex;align-items:center;gap:22px;flex-wrap:wrap;background:var(--card);
+  border-bottom:2px solid var(--line-strong);box-shadow:var(--shadow);
+  padding:0 24px;min-height:56px;position:sticky;top:0;z-index:10}
+.brand a{font-weight:700;font-size:18px;color:var(--ink)}
+.brand span{color:var(--primary)}
+.topbar nav{display:flex;gap:6px;flex-wrap:wrap}
+.topbar nav a{color:var(--ink);font-weight:600;padding:6px 10px;border-radius:8px}
+.topbar nav a:hover{background:var(--card-2);text-decoration:none}
+.badge-count{background:var(--primary);color:var(--primary-ink);border-radius:10px;padding:1px 8px;font-size:12px;font-weight:700}
+.theme-toggle{margin-left:auto;border:1px solid var(--line-strong);background:var(--card-2);color:var(--ink);
+  border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer}
+.theme-toggle:hover{border-color:var(--primary);color:var(--primary)}
+.topbar-acciones{display:flex;align-items:center;gap:8px;margin-left:auto}
+.icon-btn{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;padding:0;
+  border:1px solid var(--line-strong);background:var(--card-2);color:var(--ink);border-radius:8px;cursor:pointer}
+.icon-btn:hover{border-color:var(--primary);color:var(--primary);text-decoration:none}
+.icon-btn svg{width:19px;height:19px;display:block}
+.theme-icon-sun{display:none}
+[data-theme="dark"] .theme-icon-moon{display:none}
+[data-theme="dark"] .theme-icon-sun{display:block}
+
+/* Iconos de acción en la cabecera del anuncio + leyenda de ayuda */
+.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ic-danger{color:var(--red)}
+.acciones-iconos{display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.puesto-linea:empty{display:none}
+
+/* Submenú de pestañas (Configuración) */
+.subtabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;border-bottom:2px solid var(--line-strong)}
+.subtab{border:1px solid var(--line-strong);border-bottom:none;background:var(--card-2);color:var(--ink);
+  border-radius:8px 8px 0 0;padding:8px 14px;font:inherit;font-weight:600;cursor:pointer;margin-bottom:-2px}
+.subtab:hover{color:var(--primary)}
+.subtab.activo{background:var(--primary);color:var(--primary-ink);border-color:var(--primary)}
+.subtab-opciones{color:var(--primary);border-color:var(--primary);font-weight:700}
+/* El formulario de edición de un plazo queda oculto hasta pulsar «Editar»
+   (la clase .row pone display:flex y, sin esto, pisaría al atributo hidden). */
+.plazo-editar-form[hidden],.plazo-vista[hidden],.pub-editar-form[hidden],.pub-vista[hidden],
+#plazo-add-form[hidden],#pub-add-form[hidden],
+#tem-add-form[hidden],#req-add-form[hidden],#ley-add-form[hidden],#enlace-add-form[hidden]{display:none}
+/* Lista de URLs de info: más espacio entre enlaces y edición en línea. */
+#enlaces-info{list-style:none;padding:0;margin:12px 0 0}
+#enlaces-info>li{margin-bottom:12px}
+#enlaces-info>li:last-child{margin-bottom:0}
+.enlace-vista{display:flex;align-items:center;gap:8px}
+.enlace-vista a{margin-right:auto;min-width:0;overflow-wrap:anywhere}
+.enlace-editar-form{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+.enlace-vista[hidden],.enlace-editar-form[hidden]{display:none}
+/* Iconos de acción (lápiz/papelera) de cada apunte de plazo, resaltados en rojo. */
+.plazo-accion{background:none;border:none;cursor:pointer;color:var(--primary);padding:2px 5px;
+  margin-left:2px;border-radius:6px;display:inline-flex;align-items:center;vertical-align:middle;line-height:1}
+.plazo-accion svg{width:16px;height:16px}
+.plazo-accion:hover{background:var(--primary);color:var(--primary-ink)}
+.pub-cabecera{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+/* Botón «+» para añadir (Publicaciones): a la derecha y el doble de grande
+   que los iconos de lápiz/papelera (16px -> 32px). */
+.add-icon-btn{background:none;border:none;cursor:pointer;color:var(--primary);padding:2px;
+  border-radius:10px;display:inline-flex;align-items:center;line-height:1}
+.add-icon-btn svg{width:32px;height:32px}
+.add-icon-btn:hover{background:var(--primary);color:var(--primary-ink)}
+.tabpanel[hidden]{display:none}
+.acciones-iconos form{margin:0}
+.icon-act{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;
+  border:1px solid var(--line-strong);background:var(--card-2);color:var(--muted);border-radius:7px;cursor:pointer}
+.icon-act:hover{border-color:var(--primary);color:var(--primary);text-decoration:none}
+.icon-act.danger:hover{border-color:var(--red);color:var(--red)}
+.leyenda{background:var(--card);border:1px solid var(--line-strong);border-radius:10px;
+  padding:12px 16px;margin-bottom:14px;box-shadow:var(--shadow)}
+.leyenda[hidden]{display:none}
+.leyenda-tit{font-weight:700;margin-bottom:8px}
+.leyenda ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.leyenda li{display:flex;align-items:center;gap:10px}
+.leyenda .ic{flex:0 0 auto;color:var(--muted)}
+
+.container{max-width:1000px;margin:24px auto;padding:0 20px}
+h1{font-size:24px;margin:0 0 16px}
+h2{font-size:18px;margin:0 0 10px}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.nowrap{white-space:nowrap}
+
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;display:block;color:var(--ink);box-shadow:var(--shadow)}
+.card:hover{border-color:var(--primary);box-shadow:var(--shadow-lg);text-decoration:none}
+.card-num{font-size:32px;font-weight:700;color:var(--primary)}
+.card-label{color:var(--muted)}
+
+.box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:20px;box-shadow:var(--shadow)}
+.head-row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+.resumen-busqueda{background:var(--card);border:1px solid var(--line-strong);border-left:4px solid var(--primary);
+  border-radius:10px;padding:10px 14px;margin-bottom:14px;box-shadow:var(--shadow)}
+
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);
+  border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:var(--th-bg);font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.02em;
+  border-bottom:2px solid var(--line-strong)}
+tr:last-child td{border-bottom:none}
+.bandeja .fila-titulo td{border-bottom:3px solid var(--line-strong);padding-top:0;padding-bottom:16px}
+.bandeja .fila-main td{border-bottom:none;padding-top:16px}
+.puesto{font-weight:600}
+/* Listados de anuncios: separador grueso entre filas */
+.listado tbody tr td{border-bottom:3px solid var(--line-strong)}
+.listado tbody td{padding-top:14px;padding-bottom:14px}
+
+.badge{display:inline-block;border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700;text-transform:capitalize;border:1px solid transparent}
+.badge-alta{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.badge-media{background:var(--amber-bg);color:var(--amber);border-color:var(--amber)}
+.badge-baja{background:var(--red-bg);color:var(--red);border-color:var(--red)}
+.pill{display:inline-block;border-radius:6px;padding:1px 8px;font-size:12px;font-weight:600;background:var(--card-2);border:1px solid var(--line-strong);color:var(--muted)}
+.pill-red{background:var(--red-bg);color:var(--red);border-color:var(--red)}
+
+/* Todos los botones con la misma apariencia (la del primario "Seguir"). */
+.btn,.btn-primary,.btn-ghost{display:inline-block;border:1px solid var(--primary);background:var(--primary);
+  color:var(--primary-ink);border-radius:8px;padding:7px 14px;font-size:14px;font-weight:600;
+  cursor:pointer;box-shadow:var(--shadow);text-align:center}
+.btn:hover,.btn-primary:hover,.btn-ghost:hover{background:var(--primary);color:var(--primary-ink);
+  filter:brightness(1.08);text-decoration:none}
+.btn-small{padding:5px 10px;font-size:13px}
+.btn:disabled,.btn[disabled]{opacity:.45;cursor:not-allowed;filter:none}
+.btn:disabled:hover,.btn[disabled]:hover{filter:none;background:var(--primary)}
+.inline{display:inline-flex;gap:10px}
+.acciones{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.acciones form{margin:0}
+
+.flashes{margin-bottom:16px}
+.flash{padding:10px 14px;border-radius:8px;margin-bottom:8px;border:1px solid var(--line-strong);border-left-width:4px;box-shadow:var(--shadow)}
+.flash-ok{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.flash-error{background:var(--red-bg);color:var(--red);border-color:var(--red)}
+.flash-aviso{background:var(--amber-bg);color:var(--amber);border-color:var(--amber)}
+
+details{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:0 16px 14px;
+  margin-bottom:14px;box-shadow:var(--shadow)}
+summary{cursor:pointer;font-weight:700;font-size:15px;padding:12px 16px;margin:0 -16px 12px;
+  background:var(--card-2);border-bottom:1px solid var(--line-strong);border-radius:12px 12px 0 0}
+summary:hover{color:var(--primary)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid2 .col2{grid-column:1 / span 2}
+label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+input,select,textarea{font:inherit;color:var(--ink);border:1px solid var(--line-strong);border-radius:8px;padding:7px 9px;background:var(--card)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--primary);outline-offset:0;border-color:var(--primary)}
+.stack{display:flex;flex-direction:column;gap:12px;max-width:520px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.row input,.row select{flex:1;min-width:120px}
+
+.timeline{list-style:none;padding:0;margin:0}
+.timeline li{padding:16px 0;border-bottom:1px solid var(--line)}
+.pub-titulo{font-weight:700;color:var(--ink);font-size:15px;margin-bottom:2px}
+.form-titulo{font-weight:700;color:var(--ink);font-size:14px}
+.timeline li:last-child{border-bottom:none}
+.timeline .fecha{display:inline-block;min-width:96px;color:var(--muted);font-size:13px}
+.timeline .tipo{font-weight:600;margin-right:8px}
+.lista{margin:0;padding-left:18px}
+.lista li{padding:3px 0}
+
+/* Configuración: reglas como chips */
+.reglas{margin:10px 0}
+.reglas-tit{font-size:12px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);margin:8px 0 4px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0}
+.chip{display:inline-flex;align-items:center;gap:2px;background:var(--card-2);border:1px solid var(--line-strong);
+  border-radius:14px;padding:2px 4px 2px 10px;font-size:13px}
+.chip-x{margin:0}
+.chip-x button,button.chip-x{border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;padding:0 4px}
+.chip-x button:hover,button.chip-x:hover{color:var(--red)}
+.fila-click{cursor:pointer}
+.fila-click:hover td{background:var(--card-2)}
+
+/* Filtros de listados */
+.filtros{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;
+  background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;box-shadow:var(--shadow)}
+.filtros #f-texto{flex:1;min-width:200px}
+.filtros .chk,.acciones-masivas .chk{display:inline-flex;flex-direction:row;align-items:center;gap:6px;white-space:nowrap;color:var(--muted);font-size:13px}
+.filtros .chk input,.acciones-masivas .chk input{width:auto;margin:0;padding:0;flex:0 0 auto}
+#f-contador{margin-left:auto;padding-left:12px;font-size:16px;font-weight:700;color:var(--red)}
+
+/* Buscador: fecha editable + casillas de boletines */
+.buscador{display:flex;gap:18px;align-items:flex-end;flex-wrap:wrap;background:var(--card);
+  border:1px solid var(--line-strong);border-radius:12px;padding:14px 16px;margin-bottom:18px;box-shadow:var(--shadow)}
+.buscador .campo{display:flex;flex-direction:column;gap:6px;font-size:12px;text-transform:uppercase;
+  letter-spacing:.03em;color:var(--muted);font-weight:600}
+.buscador .campo input[type=date]{text-transform:none;font-weight:400}
+.buscador-chks{display:flex;gap:8px;flex-wrap:wrap}
+.buscador .chk{display:inline-flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;
+  font-size:14px;font-weight:600;color:var(--ink);background:var(--card-2);border:1px solid var(--line-strong);
+  border-radius:8px;padding:6px 10px;cursor:pointer}
+.buscador .chk:hover{border-color:var(--primary)}
+.buscador .chk input{width:auto;margin:0;padding:0;flex:0 0 auto}
+.chk-prov{color:var(--ink);font-weight:700;text-transform:none}
+.chk-grupo{align-self:center;margin-left:22px;padding-left:22px;border-left:2px solid var(--line-strong);
+  color:var(--muted);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+[data-theme="dark"] .chk-prov{color:#ffffff}
+.chk-sep{align-self:stretch;flex:0 0 auto;width:2px;min-height:20px;background:var(--line-strong);border-radius:2px;margin:0 5px}
+.acciones-masivas{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:-4px 0 14px}
+/* Buscador en filas: (1) fecha + botones, (2) boletines, (3) ayuntamientos. */
+/* La cabecera reparte Fecha + los tres botones por TODO el ancho de la sección. */
+.buscador-cab{flex-basis:100%;display:flex;flex-direction:column;align-items:center;gap:12px}
+.buscador-botones{display:flex;flex-direction:row;flex-wrap:nowrap;gap:14px;align-items:center;justify-content:center}
+.buscador-cab input[type=date]{width:auto;text-transform:none;font-weight:400}
+/* Botón de buscar como lupa grande. */
+.lupa-btn{background:var(--primary);color:#fff;border:none;cursor:pointer;
+  width:48px;height:48px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;box-shadow:var(--shadow)}
+.lupa-btn:hover{filter:brightness(1.08)}
+.lupa-btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
+.lupa-btn svg{width:26px;height:26px}
+/* Botón de resumen: icono circular del mismo tamaño que la lupa, en estilo
+   secundario (contorno), con un dibujo de listado. */
+.icono-btn{background:var(--card);color:var(--ink);border:1.5px solid var(--line-strong);cursor:pointer;
+  width:48px;height:48px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+  box-shadow:var(--shadow);flex:0 0 auto}
+.icono-btn:hover{border-color:var(--primary);color:var(--primary)}
+.icono-btn svg{width:24px;height:24px}
+#chk-toggle{min-width:150px;text-align:center}
+.buscador .buscador-fila{flex-basis:100%}
+/* SOLO el nombre de la sección lleva su casilla A SU LADO (en una línea). No
+   afecta a las casillas BOE/BOJA/provincias/ayuntamientos, que mantienen .chk. */
+.chk-seccion-lbl{display:flex;flex-direction:row;align-items:center;gap:7px;cursor:pointer;white-space:nowrap;margin:0}
+.chk-seccion-lbl input{width:16px;height:16px;flex:0 0 auto;margin:0;cursor:pointer}
+/* Modal de filtros de búsqueda (se abre con el lápiz de la bandeja). */
+.modal-filtros-box{max-width:720px}
+.modal-filtros-box .buscador-fila{flex-basis:auto;margin-bottom:14px}
+.modal-filtros-box .buscador-fila:last-child{margin-bottom:0}
+/* Overlay de progreso de la búsqueda (difumina la web + círculo + %). */
+.overlay-busqueda{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;
+  background:rgba(10,14,22,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.overlay-busqueda[hidden]{display:none}
+.ob-inner{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;padding:26px;max-width:92vw}
+.ob-ring{width:132px;height:132px}
+.ob-track{fill:none;stroke:var(--line-strong);stroke-width:9}
+.ob-prog{fill:none;stroke:var(--primary);stroke-width:9;stroke-linecap:round;
+  transform:rotate(-90deg);transform-origin:center;transition:stroke-dashoffset .35s ease}
+.ob-actual{font-size:16px;font-weight:700;color:#fff;max-width:560px;line-height:1.35}
+.ob-pct{font-size:30px;font-weight:800;color:var(--primary)}
+.ob-acciones{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:4px}
+.ob-stats-panel{width:min(560px,92vw);max-height:44vh;overflow:auto;background:var(--card);
+  border:1px solid var(--line-strong);border-radius:12px;padding:10px 12px;margin-top:6px;text-align:left;box-shadow:var(--shadow-lg)}
+.ob-stat-cab,.ob-stat-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:baseline;padding:6px 4px;border-bottom:1px solid var(--line)}
+.ob-stat-cab{font-size:12px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);font-weight:700}
+.ob-stat-row{font-size:14px}
+.ob-stat-name{color:var(--ink);font-weight:600}
+.ob-stat-time{color:var(--muted);white-space:nowrap;text-align:right}
+.ob-stat-tot{font-weight:700;border-bottom:none}
+.ob-stat-total-tiempo{margin-top:8px;font-size:15px;color:var(--ink);text-align:center}
+
+/* Modal: ventana flotante del resumen de búsqueda */
+.modal-overlay{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
+  background:rgba(10,14,22,.55);padding:20px}
+.modal-overlay[hidden]{display:none}
+.modal-box{background:var(--card);border:1px solid var(--line-strong);border-radius:14px;
+  padding:22px 24px;max-width:640px;width:100%;max-height:85vh;overflow:auto;box-shadow:var(--shadow-lg)}
+.modal-box h2{margin:0 0 2px}
+.resumen-lista{list-style:none;margin:16px 0;padding:0;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.resumen-lista li{display:flex;align-items:baseline;gap:12px;padding:10px 14px 10px 28px;
+  border-bottom:1px solid var(--line);background:var(--card)}
+.resumen-lista li:last-child{border-bottom:none}
+.resumen-cod{font-weight:700;min-width:64px;color:var(--ink)}
+.resumen-amb{color:var(--muted);font-size:13px;min-width:80px}
+.resumen-subtit{font-weight:700;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.03em;margin:14px 0 4px}
+.resumen-dato{font-size:13px}
+.resumen-totales{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;
+  background:var(--card-2);border:1px solid var(--line-strong);border-radius:10px;padding:12px 14px;font-size:15px}
+.modal-acciones{display:flex;justify-content:flex-end;margin-top:18px}
+/* Resumen de búsqueda: cabecera con X y dos columnas (boletines / ayuntamientos). */
+.modal-cab{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:2px}
+.modal-cab h2{margin:0}
+.modal-x{background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;border-radius:8px;line-height:1;display:inline-flex}
+.modal-x:hover{background:var(--card-2);color:var(--ink)}
+.modal-x svg{width:22px;height:22px}
+.resumen-cols{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.resumen-col{flex:1;min-width:210px}
+.resumen-col .resumen-lista{margin:6px 0 0}
+
+/* Favoritos en la lista de seguimiento */
+.fav-cell{width:34px;text-align:center;padding-left:6px;padding-right:6px}
+.fav-btn{background:none;border:none;cursor:pointer;font-size:18px;line-height:1;padding:2px 4px;
+  color:var(--line-strong);transition:transform .08s ease,color .1s ease}
+.fav-btn:hover{transform:scale(1.15);color:var(--amber)}
+.fav-btn[aria-pressed="true"]{color:#f5b301}
+tr.fav>td{background:var(--amber-bg)}
+tr.fav>td:first-child{box-shadow:inset 3px 0 0 #f5b301}
+tr.fav a{font-weight:700}

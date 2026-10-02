@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Panel</h1>
+<div class="cards">
+  <a class="card" href="{{ url_for('bandeja') }}">
+    <div class="card-num">{{ n_pendientes_global }}</div>
+    <div class="card-label">novedades en la bandeja</div>
+  </a>
+  <a class="card" href="{{ url_for('convocatorias') }}">
+    <div class="card-num">{{ n_conv }}</div>
+    <div class="card-label">convocatorias en seguimiento</div>
+  </a>
+  <a class="card" href="{{ url_for('papelera') }}">
+    <div class="card-num">{{ n_papelera }}</div>
+    <div class="card-label">en la papelera</div>
+  </a>
+</div>
+
+<section class="box">
+  <h2>Buscar novedades</h2>
+  <p class="muted">El BOE no tiene hora fija de publicación; suele estar disponible a partir de las 8:30.</p>
+  <form method="post" action="{{ url_for('buscar') }}" class="inline">
+    <button type="submit" name="modo" value="real" class="btn btn-primary">Buscar boletines (hoy)</button>
+  </form>
+</section>
+
+<section class="box">
+  <h2>Plazos próximos</h2>
+  {% if plazos %}
+  <table>
+    <thead><tr><th>Convocatoria</th><th>Plazo</th><th>Vence</th><th>Días</th></tr></thead>
+    <tbody>
+    {% for p in plazos %}
+      <tr>
+        <td><a href="{{ url_for('ficha', cid=p.convocatoria_id) }}">{{ p.convocatoria }}</a></td>
+        <td>{{ p.tipo or '—' }}</td>
+        <td>{{ p.fecha_fin }}</td>
+        <td>{% if p.dias <= 7 %}<span class="pill pill-red">{{ p.dias }}</span>{% else %}{{ p.dias }}{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No hay plazos próximos registrados.</p>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="head-row">
+  <h1>Añadir información al anuncio</h1>
+  <a class="btn btn-ghost" href="{{ url_for('resultados', clase='sin-coincidencia') }}">← Volver</a>
+</div>
+<p class="muted">{{ r.fuente }} · {{ r.referencia }}{% if r.url %} · <a href="{{ r.url }}" target="_blank" rel="noopener">ver anuncio original</a>{% endif %}</p>
+<p class="muted small">Corrige o completa lo que las heurísticas no detectaron y elige qué hacer con el anuncio.</p>
+
+<div class="box">
+<form method="post" action="{{ url_for('resultado_info', rid=r.id) }}" class="grid2">
+  <label class="col2">Título<textarea name="titulo" rows="2">{{ r.titulo }}</textarea></label>
+  <label>Organismo<input name="organismo" value="{{ r.organismo }}"></label>
+  <label>Localidad<input name="localidad" value="{{ r.localidad }}"></label>
+  <label>Puesto<input name="puesto" value="{{ r.puesto }}">
+    <button type="submit" name="accion" value="detectar" formnovalidate class="btn btn-small btn-ghost" style="margin-top:4px" title="Descarga la página del anuncio e intenta detectar el puesto">Detectar puesto</button>
+  </label>
+  <label>Grupo / categoría<input name="grupo" value="{{ r.grupo }}"></label>
+  <label>Nº de plazas<input name="num_plazas" type="number" min="0" value="{{ r.num_plazas }}"></label>
+  <label>Tipo de personal<input name="tipo_personal" value="{{ r.tipo_personal }}"></label>
+  <label>Sistema de acceso<input name="sistema_acceso" value="{{ r.sistema_acceso }}"></label>
+  <label class="col2">URL<input name="url" value="{{ r.url }}"></label>
+  <div class="col2 acciones">
+    <button class="btn btn-primary" name="accion" value="seguir">Seguir</button>
+    <button class="btn" name="accion" value="review">Review</button>
+    <a class="btn btn-ghost" href="{{ url_for('resultados', clase='sin-coincidencia') }}">Cancelar</a>
+  </div>
+</form>
+</div>
+{% endblock %}

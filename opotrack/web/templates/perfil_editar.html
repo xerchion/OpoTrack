@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="head-row">
+  <h1 id="perfil-titulo">Perfil: {{ p.nombre }}</h1>
+  <a class="btn btn-ghost" href="{{ url_for('configuracion') }}">← Volver</a>
+</div>
+
+<div class="box">
+  <h2>Datos del perfil</h2>
+  <form id="perfil-datos" data-pid="{{ p.id }}" class="grid2">
+    <label>Nombre<input name="nombre" value="{{ p.nombre }}" required></label>
+    <label>Rama<input name="rama" value="{{ p.rama or '' }}" placeholder="administrativa / informatica"></label>
+    <label class="col2">Ámbito<input name="ambito" value="{{ p.ambito or '' }}" placeholder="descriptivo"></label>
+    <div class="col2" style="display:flex;gap:10px;align-items:center">
+      <button class="btn btn-primary" type="submit">Guardar datos</button>
+      <span id="perfil-datos-ok" class="badge badge-alta" hidden>Guardado</span>
+    </div>
+  </form>
+  <div class="row" style="margin-top:12px">
+    <form method="post" action="{{ url_for('perfil_toggle', pid=p.id) }}"><button class="btn btn-small">{{ 'Desactivar perfil' if p.activo else 'Activar perfil' }}</button></form>
+    <form method="post" action="{{ url_for('perfil_eliminar', pid=p.id) }}" onsubmit="return confirm('¿Eliminar el perfil y sus reglas?');"><button class="btn btn-small btn-ghost">Eliminar perfil</button></form>
+  </div>
+</div>
+
+{% for grupo, etiqueta, tipo, ayuda in [
+    (p.tematicas, 'Temáticas', 'tematica', 'Debe aparecer al menos uno para que un anuncio entre.'),
+    (p.geograficas, 'Ámbito geográfico', 'geografica', 'Si defines alguno, el anuncio debe cumplir al menos uno.'),
+    (p.exclusiones, 'Exclusiones', 'exclusion', 'Si aparece alguno, el anuncio se descarta.')] %}
+<div class="box">
+  <h2>{{ etiqueta }}</h2>
+  <p class="muted small">{{ ayuda }}</p>
+  <div class="chips" data-tipo="{{ tipo }}">
+    {% for rid, termino in grupo %}
+    <span class="chip" data-rid="{{ rid }}">{{ termino }}
+      <button type="button" class="chip-x regla-del" data-rid="{{ rid }}" title="Quitar">&times;</button>
+    </span>
+    {% endfor %}
+  </div>
+  <form class="row regla-add" data-pid="{{ p.id }}" data-tipo="{{ tipo }}">
+    <input name="termino" placeholder="añadir término..." autocomplete="off">
+    <button class="btn btn-small" type="submit">Añadir</button>
+  </form>
+</div>
+{% endfor %}
+
+<script>
+(function () {
+  var XHR = { 'X-Requested-With': 'XMLHttpRequest' };
+
+  function nuevoChip(chips, id, termino) {
+    var chip = document.createElement('span');
+    chip.className = 'chip';
+    chip.dataset.rid = id;
+    chip.appendChild(document.createTextNode(termino + ' '));
+    var x = document.createElement('button');
+    x.type = 'button'; x.className = 'chip-x regla-del';
+    x.dataset.rid = id; x.title = 'Quitar'; x.innerHTML = '&times;';
+    x.addEventListener('click', quitar);
+    chip.appendChild(x);
+    chips.appendChild(chip);
+  }
+
+  function quitar() {
+    var chip = this.closest('.chip'), rid = this.dataset.rid;
+    fetch('/configuracion/regla/' + rid + '/eliminar', { method: 'POST', headers: XHR })
+      .then(function (r) { return r.json(); })
+      .then(function (d) { if (d.ok) chip.remove(); })
+      .catch(function () {});
+  }
+
+  document.querySelectorAll('.regla-del').forEach(function (b) {
+    b.addEventListener('click', quitar);
+  });
+
+  document.querySelectorAll('.regla-add').forEach(function (form) {
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var inp = form.querySelector('input[name=termino]');
+      var termino = (inp.value || '').trim();
+      if (!termino) return;
+      var body = new URLSearchParams({ termino: termino, tipo: form.dataset.tipo });
+      fetch('/configuracion/perfil/' + form.dataset.pid + '/regla', {
+        method: 'POST', headers: XHR, body: body
+      }).then(function (r) { return r.json(); }).then(function (d) {
+        if (!d.ok) { if (d.error) alert(d.error); return; }
+        var chips = form.parentNode.querySelector('.chips');
+        nuevoChip(chips, d.id, d.termino);
+        inp.value = ''; inp.focus();
+      }).catch(function () {});
+    });
+  });
+
+  var pd = document.getElementById('perfil-datos');
+  if (pd) {
+    pd.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var body = new URLSearchParams(new FormData(pd));
+      fetch('/configuracion/perfil/' + pd.dataset.pid + '/datos', {
+        method: 'POST', headers: XHR, body: body
+      }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+        .then(function (res) {
+          if (res.d.ok) {
+            document.getElementById('perfil-titulo').textContent = 'Perfil: ' + res.d.nombre;
+            var ok = document.getElementById('perfil-datos-ok');
+            ok.hidden = false; setTimeout(function () { ok.hidden = true; }, 1500);
+          } else if (res.d.error) {
+            alert(res.d.error);
+          }
+        }).catch(function () {});
+    });
+  }
+})();
+</script>
+{% endblock %}
