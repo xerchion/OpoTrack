@@ -1,0 +1,13 @@
+services:
+  opotrack:
+    build: .
+    ports:
+      - "5000:5000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      OPOTRACK_DB: /datos/opotrack.db
+    volumes:
+      - ./datos:/datos
+    restart: unless-stopped

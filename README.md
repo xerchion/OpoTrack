@@ -62,6 +62,29 @@ En **Windows** basta con hacer doble clic en `OpoTrack.bat`: instala las
 dependencias la primera vez, prepara la base de datos, arranca el servidor y
 abre el navegador.
 
+## Despliegue con Docker
+
+Para tenerlo siempre encendido en un servidor casero, sin instalar Python:
+
+    git clone https://github.com/xerchion/OpoTrack.git
+    cd OpoTrack
+    docker compose build
+    docker compose run --rm opotrack python cli.py seed   # solo la primera vez
+    docker compose up -d                                  # http://<ip-del-servidor>:5000
+
+La base de datos y los documentos adjuntos se guardan en `./datos`, fuera del
+contenedor, así que sobreviven a reconstrucciones y actualizaciones. Las
+variables de un archivo `.env` opcional (Telegram, clave de sesión) se pasan al
+contenedor al arrancar.
+
+Para actualizar: `git pull && docker compose up -d --build`.
+
+Aviso diario con cron en el servidor (a las 8:00):
+
+    0 8 * * * cd /ruta/a/OpoTrack && docker compose run --rm -T opotrack python cli.py notificar
+
+Dentro del contenedor la aplicación escucha en todas las interfaces y sigue sin
+tener login: no abras el puerto a internet.
 ## Configuración
 
 Todo lo configurable por entorno se lee de un archivo `.env` en la raíz del
